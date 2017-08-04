@@ -1,0 +1,8 @@
+filename, Flesch-Kincaid, Coleman-Liau index, Dale-Chale readability formula, readability level (SMOG), Automated Readability Index, # of chars, # of spaces, # of letters, # of words, # of sentences, # of complex words, # of simple words, average # of words per sentence, average # of syllables per sentence, % of complex words
+gaidar_baraban.txt, 5.142, 5.761, 5.724, 6.476, 5.344, 4330, 686, 3416, 649, 53, 28, 621, 12.245, 2.236, 4.314
+gaidar_countries.txt, 1.617, 1.439, 3.476, 3.995, 1.454, 9575, 1541, 7260, 1487, 216, 43, 1444, 6.884, 2.108, 2.892
+grigor_gutt.txt, 12.9, 12.192, 10.676, 12.201, 13.608, 5491, 769, 4522, 726, 36, 68, 658, 20.167, 2.605, 9.366
+korol_blind.txt, 9.781, 8.67, 8.662, 9.772, 9.316, 5810, 1080, 4476, 797, 43, 52, 745, 18.535, 2.422, 6.524
+ryb_bird.txt, 7.408, 7.661, 5.679, 6.516, 7.58, 3154, 460, 2518, 441, 43, 23, 418, 10.256, 2.44, 5.215
+ryb_kortik.txt, 5.456, 5.721, 5.296, 6.031, 5.693, 3467, 523, 2739, 499, 59, 27, 472, 8.458, 2.343, 5.411
+tolst_nikita.txt, 6.416, 7.221, 5.695, 6.456, 7.004, 3546, 716, 2669, 482, 40, 21, 461, 12.05, 2.33, 4.357
