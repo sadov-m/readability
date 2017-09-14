@@ -33,11 +33,12 @@ prepositions = """без-/бес- · в-/во- · вз-/взо-/вс- · вне-
 # print(prep_finder.findall(prepositions))
 
 vowel = set('аеёиоуыэюя')
-voiced = set('бвгджзлмнрхцчшщ')
+voiced = set('бвгдзлмнрхц')
 deaf = set('кпстф')
 brief = 'й'
 other = set('ьъ')
 cons = set('бвгджзйклмнпрстфхцчшщ')
+sizz = set('жшчщ')
 
 
 def check_vowel_presence(string):
@@ -65,29 +66,29 @@ def get_syllables(string):
             current_syllable = ''
 
         # если эта буква - не последняя, текущая и следующая - гласные
-        elif ind != last_ind and letter in vowel and string[ind+1] in vowel:
+        if ind != last_ind and letter in vowel and string[ind+1] in vowel:
             result.append(current_syllable)
             current_syllable = ''
 
-        # если эта буква - не последняя, текущая - гласная, следующая - согласная, а после неё - гласная
-        elif ind < last_ind - 1 and letter in vowel and string[ind+1] in cons and string[ind+2] in vowel:
+        # если эта буква - не последняя и не предпоследняя, текущая - гласная, следующая - согласная, а после неё - гласная
+        if ind < last_ind - 1 and letter in vowel and string[ind+1] in cons and string[ind+2] in vowel:
             result.append(current_syllable)
             current_syllable = ''
 
-        # если эта буква - не последняя, текущая - гласная, следующая - глухая согласная,
+        # если эта буква - не последняя и не предпоследняя, текущая - гласная, следующая - глухая согласная,
         # а после неё - согласная, и это - не последний слог
-        elif ind < last_ind - 1 and letter in vowel and string[ind+1] in deaf and string[ind+2] in cons and check_vowel_presence(string[ind+1:]):
+        if ind < last_ind - 1 and letter in vowel and string[ind+1] in deaf and string[ind+2] in cons and check_vowel_presence(string[ind+1:]):
             result.append(current_syllable)
             current_syllable = ''
 
         # если это - не первая и не последняя буква, если текущая - звонкая или шипящая согласная, перед ней - гласная,
         # следующая - не гласная и не "ь"/"ъ", и это - не последний слог
-        elif ind != 0 and ind != last_ind and letter in voiced.union(deaf) and string[ind-1] in vowel and string[ind+1] not in vowel.union(other) and check_vowel_presence(string[ind+1:]):
+        if ind != 0 and ind != last_ind and letter in voiced.union(sizz) and string[ind-1] in vowel and string[ind+1] not in vowel.union(other) and check_vowel_presence(string[ind+1:]):
             result.append(current_syllable)
             current_syllable = ''
 
-        # если текущая - "ь"/"ъ" и при этом не последняя, если следующая - гласная, и это - первый слог
-        elif ind != last_ind and letter in other and string[ind+1] not in vowel and result == []:
+        # если текущая - "ь"/"ъ" и при этом не последняя, если следующая - гласная или первый слог
+        if ind != last_ind and letter in other and (string[ind+1] not in vowel and result == []):
             result.append(current_syllable)
             current_syllable = ''
 
@@ -101,4 +102,5 @@ with open('сложные-слова.txt', 'r', encoding='utf-8') as opener:
 model_types = io.read_binary_model_file(r'C:\Users\Ольга\PycharmProjects\DSM_morphology\morfessor\types')
 
 for word in word_list:
-    print(get_syllables(word))
+    syllabs = get_syllables(word.lower())
+    print(syllabs)
