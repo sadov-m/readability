@@ -3,21 +3,17 @@
 import requests
 import os
 import time
+from tqdm import tqdm
 
-text = """Итальянский форвард Джузеппе Росси в новом сезоне не будет выступать за «Сельту», сообщает официальный сайт клуба.
+header = 'filename, audience, readability level (SMOG), Flesch-Kincaid, Coleman-Liau index, Dale-Chale readability formula, ' \
+                 'Automated Readability Index, # of chars, # of spaces, # of letters, # of words, # of sentences, ' \
+                 '# of complex words, # of simple words, average # of words per sentence, average # of syllables per sentence, ' \
+                 '% of complex words'
 
-Арендное соглашение «Сельты» с «Фиорентиной» истекло в конце июня, и клуб решил его не продлевать.
-
-Причины такого решения испанцев не озвучиваются, но, вероятно, дело в очередном разрыве крестообразных связок у 30-летнего форварда, который выбил его из игры как минимум на полгода.
-
-Напомним, что у Росси закончился не только арендный договор с «Сельтой», но и контракт с «Фиорентиной», так что в новый клуб он сможет перебраться как свободный агент.
-
-В минувшем сезоне Джузеппе Росси сыграл за «Сельту» 29 матчей и забил шесть голов во всех турнирах."""
-path = input('type in the path to a folder whhich contains corpus: ')# r"C:\Users\Ольга\Desktop\test_collection"
 
 def estimations_for_text(text_to_estimate):
     response = requests.post("http://api.plainrussian.ru/api/1.0/ru/measure/", data={"text": text_to_estimate})
-    time.sleep(0.1)
+    time.sleep(0.5)
 
     # dict_keys(['metrics', 'status', 'lang', 'debug', 'indexes'])
     grades = response.json()['indexes']
@@ -42,25 +38,24 @@ def extracting_path(path_dir):
     return container
 
 
-def create_an_output_table(list_of_paths):
+def create_an_output_table(list_of_paths, func, header_of_table):
 
     with open(path+'\output_for_'+path.split('\\')[-1]+'.csv', 'w', encoding='utf-8') as writer:
-        header = 'filename, audience, readability level (SMOG), Flesch-Kincaid, Coleman-Liau index, Dale-Chale readability formula, ' \
-                 'Automated Readability Index, # of chars, # of spaces, # of letters, # of words, # of sentences, ' \
-                 '# of complex words, # of simple words, average # of words per sentence, average # of syllables per sentence, ' \
-                 '% of complex words'
-        writer.write(header+'\n')
+        writer.write(header_of_table + '\n')
 
-        for ind, link in enumerate(list_of_paths):
+        for i in tqdm(range(len(list_of_paths))):
             length = len(list_of_paths)
 
-            with open(link, 'r', encoding='utf-8') as opener:
-                readability_result = estimations_for_text(opener.read())
-                readability_result.insert(0, link.split('\\')[-1])
+            with open(list_of_paths[i], 'r', encoding='utf-8') as opener:
+                readability_result = func(opener.read())
+                readability_result.insert(0, list_of_paths[i].split('\\')[-1])
 
-                if ind == length:
+                if i == length-1:
                     writer.write(', '.join(readability_result))
                 else:
                     writer.write(', '.join(readability_result)+'\n')
 
-create_an_output_table(extracting_path(path))
+if __name__ == '__main__':
+    path = input('type in the path to a folder which contains corpus: ')
+
+    create_an_output_table(extracting_path(path), estimations_for_text, header)
