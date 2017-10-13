@@ -23,7 +23,7 @@ def estimations_for_text(text_to_estimate):
     return [str(elem) for elem in text_characteristics]
 
 
-def extracting_paths(path_dir):
+def extracting_texts_paths(path_dir):
     container = []
 
     for d, dirs, files in os.walk(path_dir):
@@ -36,7 +36,7 @@ def extracting_paths(path_dir):
 
 def create_an_output_table(list_of_paths, func_for_estimations, header_of_table):
 
-    with open(path+'\output_for_'+path.split('\\')[-1]+'.csv', 'w', encoding='utf-8') as writer:
+    with open(path_for_api+ '\output_for_'+path_for_api.split('\\')[-1]+ '.csv', 'w', encoding='utf-8') as writer:
         writer.write(header_of_table + '\n')
 
         for i in tqdm(range(len(list_of_paths))):
@@ -58,6 +58,6 @@ if __name__ == '__main__':
              '# of words, # of sentences, # of complex words, # of simple words, average # of words per sentence, ' \
              'average # of syllables per sentence, % of complex words'
 
-    path = input('type in the path to a folder which contains corpus: ')
+    path_for_api = input('type in the path to a folder with texts to analyze: ')
 
-    create_an_output_table(extracting_paths(path), estimations_for_text, header)
+    create_an_output_table(extracting_texts_paths(path_for_api), estimations_for_text, header)

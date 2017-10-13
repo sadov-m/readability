@@ -1,11 +1,11 @@
 import IB_metrics_readability
-from readability_io_api import extracting_paths
+from readability_io_api import extracting_texts_paths
 from tqdm import tqdm
 
 
 def create_an_output_table_offline(list_of_paths, func, header_of_table):
 
-    with open(spec_path+'\output_for_'+spec_path.split('\\')[-1]+'.csv', 'w', encoding='utf-8') as writer:
+    with open(path_for_offline_api+ '\output_for_'+path_for_offline_api.split('\\')[-1]+ '.csv', 'w', encoding='utf-8') as writer:
         writer.write(header_of_table + '\n')
 
         for i in tqdm(range(len(list_of_paths))):
@@ -33,6 +33,6 @@ if __name__ == '__main__':
              '# of complex words, # of simple words, average # of words per sentence, ' \
              'average # of syllables per sentence, % of complex words'
 
-    spec_path = input("type in the path to a folder with texts to analyze: ")
+    path_for_offline_api = input("type in the path to a folder with texts to analyze: ")
 
-    create_an_output_table_offline(extracting_paths(spec_path), IB_metrics_readability.calc_readability_metrics, header)
+    create_an_output_table_offline(extracting_texts_paths(path_for_offline_api), IB_metrics_readability.calc_readability_metrics, header)
