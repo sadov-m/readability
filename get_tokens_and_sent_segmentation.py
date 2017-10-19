@@ -2,7 +2,7 @@
 
 """
 The first version of code by Elmira Mustakimova is taken from
-https://github.com/elmiram/RusTokenizer/blob/master/tokenize.py
+https://github.com/elmiram/RusTokenizer/blob/master/get_tokens_and_sent_segmentation.py
 Modified for Python-3 by Mikhail Sadov.
 """
 import os
