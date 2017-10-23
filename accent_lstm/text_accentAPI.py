@@ -79,10 +79,10 @@ def predict(model_for_prediction, word):
 
 def main(list_of_strings):
 
-    with open("text_model.json", 'r') as content_file:
+    with open("accent_lstm/text_model.json", 'r') as content_file:
         json_string = content_file.read()
     loaded_model = model_from_json(json_string)
-    loaded_model.load_weights('on-texts-weights-improvement-09-0.96.hdf5')
+    loaded_model.load_weights('accent_lstm/on-texts-weights-improvement-09-0.96.hdf5')
 
     output = []
 
