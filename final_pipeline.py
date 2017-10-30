@@ -40,21 +40,34 @@ def get_accent_syl_id(accentuated_char_id, list_of_syls_lengths):
                 return i
 
 
+def open_wordlist(path):
+
+    with open(path) as list_opener:
+        wordlist = list_opener.read().split('\n')
+
+    return wordlist
+
+
+alt_conjs, coord_conjs = open_wordlist('lex_dicts/противительные_союзы.txt'), open_wordlist('lex_dicts/сочинительные_союзы.txt')
+
 for path in paths:
+
     with open(path, encoding='utf-8') as file_opener:
         text = file_opener.read()
 
     # sentense splitting + tokenization
     tokenizer = get_tokens_and_sent_segmentation.Text(fname=r'', text_in_string=text, path_input=False)
     tokenizer.process()
+    # removing all the punctuation from tokens so as to count number of words in text
     tokenized_sents = [[token for token in sent if token.isalnum()] for sent in tokenizer.get_sentence_segmentation()]
 
     # plain formal features: see variables names
     number_of_sents = len(tokenized_sents)
     number_of_words = sum([len(sent) for sent in tokenized_sents])
-    list_of_words_len = [len(word) for sent in tokenized_sents for word in sent]
+    list_of_words_len = [len(word) for sent in tokenized_sents for word in sent]  # auxiliary
     total_chars_len = sum(list_of_words_len)
     avg_chars_len = total_chars_len/len(list_of_words_len)
+    print('num of sentences:', number_of_sents, 'num of words:', number_of_words, 'total chars:', total_chars_len)
 
     # accent_lstm
     accentuated = text_accentAPI.main([' '.join(sent) for sent in tokenized_sents[:2]])
@@ -142,9 +155,9 @@ for path in paths:
             accent_id_in_syl = accent_pos - sum([len(syl) for syl in syllables[:accent_syl_id]])
 
             result = [''.join(get_word_mask(syl)) for syl in syllables]
-            print(words_only[ind], accent_positions[ind])
-            print(result, result[accent_syl_id], accent_syl_id, accent_id_in_syl)
-            print()
+            #print(words_only[ind], accent_positions[ind])
+            #print(result, result[accent_syl_id], accent_syl_id, accent_id_in_syl)
+            #print()
             # here comes the features!
             whole_mask = ''.join(result)
 
@@ -257,9 +270,9 @@ for path in paths:
     # lex features
     parenth = 0  # Вводные слова
     rare_obsol = 0  # Редко употребляемые/устаревшие слова
-    protiv_conj = 0  # Противительные союзы?
-    soch_conj = 0  # Сочинительные союзы?
-    foreign = 0  # Иностранные слова?
+    alt_conjs_num = 0  # Противительные союзы
+    coord_conjs_num = 0  # Сочинительные союзы
+    foreign = 0  # Иностранные слова
 
     # morph features
     verbs_pers = 0  # Глаголы в личной форме
@@ -269,13 +282,13 @@ for path in paths:
     dat = 0  # слова в дативе
     ins = 0  # слова в творительном
     abl = 0  # слова в предложном
-    numeral = 0  #
-    a_pro = 0  #
-    s_pro = 0  #
-    adv = 0  #
+    numeral = 0  # числительные
+    a_pro = 0  # adj-pron
+    s_pro = 0  # subj-pron
+    adv = 0  # наречия
 
     # lex and morph features retrieval
-    mystem_result = mystem.analyze('Я люблю ходить гулять, ты любишь тоже, а они любят?')
+    mystem_result = mystem.analyze(text)
 
     for word_gr in mystem_result:
 
@@ -292,6 +305,17 @@ for path in paths:
                 verbs_pers += 1
             elif 'ADV' in gr:
                 adv += 1
+            elif 'NUM' in gr:
+                numeral += 1
+            elif 'APRO' in gr:
+                a_pro += 1
+            elif 'SPRO' in gr:
+                s_pro += 1
+            elif 'CONJ' in gr:
+                if word_gr['text'] in coord_conjs:
+                    coord_conjs_num += 1
+                elif word_gr['text'] in alt_conjs:
+                    alt_conjs_num += 1
 
             if 'им' in gr:
                 nom += 1
@@ -306,17 +330,10 @@ for path in paths:
             elif 'пр' in gr:
                 abl += 1
 
-            if 'NUM' in gr:
-                numeral += 1
-            elif 'APRO' in gr:
-                a_pro += 1
-            elif 'SPRO' in gr:
-                s_pro += 1
         except KeyError:
             pass
 
     # ru-syntax
-
     line = r'python C:\Users\Mike\PycharmProjects\ru-syntax\ru-syntax.py {}'.format(path)
     call(line)
 
@@ -391,3 +408,21 @@ for path in paths:
             sent_three_homogen += 1
 
     #print(number_of_sents, number_of_words, len(list_of_words_len), total_chars_len, avg_chars_len)
+
+    first_level = [stressed_first_v, c_in_the_end, c_in_the_beginning, two_syl_open_syls,
+                   three_syl_open_syls, one_syl, two_syl]
+    second_level = [one_syl_cvc, one_syl_begin_cc, two_syl_begin_cc, two_syl_1th_stressed,
+                    three_syl_2nd_stressed, two_syl_2nd_stressed, three_syl_1th_stressed,
+                    three_syl_cv_pattern, four_syl_cv_pattern, nom, acc, dat, abl,
+                    sent_simple, sent_two_homogen, sent_three_homogen, no_predic, sent_complic_soch,
+                    verbs_pers, parenth]
+    third_level = [one_syl_end_cc, two_syl_middle_cc, three_syl_begin_cc, three_syl_middle_cc,
+                   three_syl_end_cc, four_syl_cc_on_the_edge, five_syl_cv_pattern, adv, gen,
+                   ins, coord_conjs_num, sent_complic_depend, inverse, numeral, a_pro, s_pro]
+    fourth_level = [three_syl_3rd_stressed, three_syl_cc_on_the_edge, five_syl_cc_on_the_edge,
+                    alt_conjs_num, rare_obsol, foreign, particip_clause]
+
+    print('first level features are:', first_level)
+    print('second level features are:', second_level)
+    print('third level features are:', third_level)
+    print('fourth level features are:', fourth_level)
