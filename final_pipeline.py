@@ -10,7 +10,16 @@ mystem = Mystem()
 mystem.start()
 
 path_for_pipeline = input('type in the path to a folder with texts to analyze: ')
-# C:\Users\Mike\Desktop\test
+# C:\Users\Mike\PycharmProjects\readability\тексты_по_классам\1_класс
+file_names = []
+num_of_1st_class = []
+names_of_1st_class_feats = []
+num_of_2nd_class = []
+names_of_2nd_class_feats = []
+num_of_3rd_class = []
+names_of_3rd_class_feats = []
+num_of_4th_class = []
+names_of_4th_class_feats = []
 
 paths = extracting_texts_paths(path_for_pipeline)
 
@@ -28,24 +37,33 @@ def get_word_mask(word):
 def get_accent_syl_id(accentuated_char_id, list_of_syls_lengths):
     last = len(list_of_syls_lengths) - 1
 
-    for i in range(len(list_of_syls_lengths)):
-        if i == 0:
+    for k in range(len(list_of_syls_lengths)):
+        if k == 0:
             if 0 <= accentuated_char_id < list_of_syls_lengths[0]:
                 return 0
-        elif i == last:
-            if sum(list_of_syls_lengths[:i]) <= accentuated_char_id:
+        elif k == last:
+            if sum(list_of_syls_lengths[:k]) <= accentuated_char_id:
                 return last
         else:
-            if sum(list_of_syls_lengths[:i]) <= accentuated_char_id < sum(list_of_syls_lengths[:i+1]):
-                return i
+            if sum(list_of_syls_lengths[:k]) <= accentuated_char_id < sum(list_of_syls_lengths[:k+1]):
+                return k
 
 
-def open_wordlist(path):
+def open_wordlist(path_to_txt):
 
-    with open(path) as list_opener:
+    with open(path_to_txt) as list_opener:
         wordlist = list_opener.read().split('\n')
 
     return wordlist
+
+
+def get_data_for_clusterization(list_for_num, list_of_num, list_for_names, list_of_names):
+    list_for_num.append(sum([elem / elem for elem in list_of_num if elem > 0]))
+
+    list_for_names.append(['BOS,'])
+    for l in range(len(list_of_num)):
+        if list_of_num[l] > 0:
+            list_for_names[-1].append(list_of_names[l])
 
 
 alt_conjs, coord_conjs = open_wordlist('lex_dicts/противительные_союзы.txt'), open_wordlist('lex_dicts/сочинительные_союзы.txt')
@@ -54,6 +72,7 @@ for path in paths:
 
     with open(path, encoding='utf-8') as file_opener:
         text = file_opener.read()
+        file_names.append(path)
 
     # sentense splitting + tokenization
     tokenizer = get_tokens_and_sent_segmentation.Text(fname=r'', text_in_string=text, path_input=False)
@@ -67,10 +86,10 @@ for path in paths:
     list_of_words_len = [len(word) for sent in tokenized_sents for word in sent]  # auxiliary
     total_chars_len = sum(list_of_words_len)
     avg_chars_len = total_chars_len/len(list_of_words_len)
-    print('num of sentences:', number_of_sents, 'num of words:', number_of_words, 'total chars:', total_chars_len)
+    # print('num of sentences:', number_of_sents, 'num of words:', number_of_words, 'total chars:', total_chars_len)
 
     # accent_lstm
-    accentuated = text_accentAPI.main([' '.join(sent) for sent in tokenized_sents[:2]])
+    accentuated = text_accentAPI.main([' '.join(sent) for sent in tokenized_sents])
     accent_positions = []
     words_only = []
 
@@ -130,7 +149,7 @@ for path in paths:
     c_in_the_beginning = 0  # Согласные в начале слова
 
     # segmentation itself and syllable features retrieval
-    for ind, word in enumerate(words_only[:10]):
+    for ind, word in enumerate(words_only):
 
         if accent_positions[ind] != 'No':
 
@@ -155,13 +174,14 @@ for path in paths:
             accent_id_in_syl = accent_pos - sum([len(syl) for syl in syllables[:accent_syl_id]])
 
             result = [''.join(get_word_mask(syl)) for syl in syllables]
-            #print(words_only[ind], accent_positions[ind])
-            #print(result, result[accent_syl_id], accent_syl_id, accent_id_in_syl)
-            #print()
+            # print(words_only[ind], accent_positions[ind])
+            # print(result, result[accent_syl_id], accent_syl_id, accent_id_in_syl)
+            # print()
+
             # here comes the features!
             whole_mask = ''.join(result)
 
-            if accent_syl_id == 0:
+            if accent_pos == 0:
                 stressed_first_v += 1
             elif whole_mask[0] == 'C':
                 c_in_the_beginning += 1
@@ -330,7 +350,7 @@ for path in paths:
             elif 'пр' in gr:
                 abl += 1
 
-        except KeyError:
+        except:
             pass
 
     # ru-syntax
@@ -366,17 +386,18 @@ for path in paths:
 
     for sent in sents:
         predic = False
-        root_id = 0
-        predic_id = 0
+        predic_ids = []
+        root_ids = []
         not_simple = False
         soch = 0
 
         for i, elem in enumerate(sent):
             if elem[7] == 'предик':
                 predic = True
-                predic_id = int(elem[0])
+                predic_ids.append(int(elem[0]))
+                root_ids.append(int(elem[6]))
             elif elem[7] == 'ROOT':
-                root_id = int(elem[0])
+                pass
             elif elem[7] == 'опред' or 'PUNC':
                 pass
             else:
@@ -394,8 +415,10 @@ for path in paths:
             elif elem[3] == 'PARTCP':
                 particip_clause += 1
 
-        if root_id < predic_id:
-            inverse += 1
+        for i in range(len(predic_ids)):
+            if root_ids[i] < predic_ids[i]:
+                inverse += 1
+                break
 
         if len(sent) < 5 and predic and not not_simple:
             sent_simple += 1
@@ -409,20 +432,55 @@ for path in paths:
 
     #print(number_of_sents, number_of_words, len(list_of_words_len), total_chars_len, avg_chars_len)
 
+    # 7
     first_level = [stressed_first_v, c_in_the_end, c_in_the_beginning, two_syl_open_syls,
                    three_syl_open_syls, one_syl, two_syl]
+    first_level_names = """stressed_first_v, c_in_the_end, c_in_the_beginning, two_syl_open_syls, three_syl_open_syls,
+     one_syl, two_syl""".split()
+
+    # 20
     second_level = [one_syl_cvc, one_syl_begin_cc, two_syl_begin_cc, two_syl_1th_stressed,
                     three_syl_2nd_stressed, two_syl_2nd_stressed, three_syl_1th_stressed,
                     three_syl_cv_pattern, four_syl_cv_pattern, nom, acc, dat, abl,
                     sent_simple, sent_two_homogen, sent_three_homogen, no_predic, sent_complic_soch,
                     verbs_pers, parenth]
+    second_level_names = """one_syl_cvc, one_syl_begin_cc, two_syl_begin_cc, two_syl_1th_stressed,
+                    three_syl_2nd_stressed, two_syl_2nd_stressed, three_syl_1th_stressed,
+                    three_syl_cv_pattern, four_syl_cv_pattern, nom, acc, dat, abl,
+                    sent_simple, sent_two_homogen, sent_three_homogen, no_predic, sent_complic_soch,
+                    verbs_pers, parenth""".split()
+
+    # 16
     third_level = [one_syl_end_cc, two_syl_middle_cc, three_syl_begin_cc, three_syl_middle_cc,
                    three_syl_end_cc, four_syl_cc_on_the_edge, five_syl_cv_pattern, adv, gen,
                    ins, coord_conjs_num, sent_complic_depend, inverse, numeral, a_pro, s_pro]
+    third_level_names = """one_syl_end_cc, two_syl_middle_cc, three_syl_begin_cc, three_syl_middle_cc,
+                   three_syl_end_cc, four_syl_cc_on_the_edge, five_syl_cv_pattern, adv, gen,
+                   ins, coord_conjs_num, sent_complic_depend, inverse, numeral, a_pro, s_pro""".split()
+
+    # 7
     fourth_level = [three_syl_3rd_stressed, three_syl_cc_on_the_edge, five_syl_cc_on_the_edge,
                     alt_conjs_num, rare_obsol, foreign, particip_clause]
+    fourth_level_names = """three_syl_3rd_stressed, three_syl_cc_on_the_edge, five_syl_cc_on_the_edge,
+                    alt_conjs_num, rare_obsol, foreign, particip_clause""".split()
 
-    print('first level features are:', first_level)
+    get_data_for_clusterization(num_of_1st_class, first_level, names_of_1st_class_feats, first_level_names)
+    get_data_for_clusterization(num_of_2nd_class, second_level, names_of_2nd_class_feats, second_level_names)
+    get_data_for_clusterization(num_of_3rd_class, third_level, names_of_3rd_class_feats, third_level_names)
+    get_data_for_clusterization(num_of_4th_class, fourth_level, names_of_4th_class_feats, fourth_level_names)
+
+    """print('first level features are:', first_level)
     print('second level features are:', second_level)
     print('third level features are:', third_level)
-    print('fourth level features are:', fourth_level)
+    print('fourth level features are:', fourth_level)"""
+
+#print(len(num_of_1st_class), len(num_of_2nd_class), len(num_of_3rd_class), len(num_of_4th_class), len(names_of_1st_class_feats),
+#      len(names_of_2nd_class_feats), len(names_of_3rd_class_feats), len(names_of_4th_class_feats))
+
+with open(path_for_pipeline+r'\result.csv', 'w', encoding='utf-8') as writer:
+    for m in range(len(num_of_1st_class)):
+        writer.write(file_names[m]+'; '+str(num_of_1st_class[m])+'; '+str(num_of_2nd_class[m])+'; '+
+                     str(num_of_3rd_class[m])+'; '+str(num_of_4th_class[m])+'; '+''.join(names_of_1st_class_feats[m])+'; '+
+                     ''.join(names_of_2nd_class_feats[m])+'; '+''.join(names_of_3rd_class_feats[m])+'; '+
+                     ''.join(names_of_4th_class_feats[m])+'\n')
+
