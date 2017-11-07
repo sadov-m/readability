@@ -1,16 +1,12 @@
 from readability_io_api import extracting_texts_paths
 import get_tokens_and_sent_segmentation
-from pymystem3 import Mystem
 from accent_lstm import text_accentAPI
 import syllable_segmentation
 from subprocess import call
 import re
 
-mystem = Mystem()
-mystem.start()
-
 path_for_pipeline = input('type in the path to a folder with texts to analyze: ')
-# C:\Users\Mike\PycharmProjects\readability\тексты_по_классам\1_класс
+# C:\Users\Mike\PycharmProjects\readability\texts_acc_to_classes\3
 file_names = []
 num_of_1st_class = []
 names_of_1st_class_feats = []
@@ -51,14 +47,14 @@ def get_accent_syl_id(accentuated_char_id, list_of_syls_lengths):
 
 def open_wordlist(path_to_txt):
 
-    with open(path_to_txt) as list_opener:
+    with open(path_to_txt, encoding='utf-8') as list_opener:
         wordlist = list_opener.read().split('\n')
 
     return wordlist
 
 
 def get_data_for_clusterization(list_for_num, list_of_num, list_for_names, list_of_names):
-    list_for_num.append(sum([elem / elem for elem in list_of_num if elem > 0]))
+    list_for_num.append(sum([elem for elem in list_of_num if elem > 0]))
 
     list_for_names.append(['BOS,'])
     for l in range(len(list_of_num)):
@@ -81,8 +77,8 @@ for path in paths:
     tokenized_sents = [[token for token in sent if token.isalnum()] for sent in tokenizer.get_sentence_segmentation()]
 
     # plain formal features: see variables names
-    number_of_sents = len(tokenized_sents)
-    number_of_words = sum([len(sent) for sent in tokenized_sents])
+    n_of_sents = len(tokenized_sents)
+    n_of_words = sum([len(sent) for sent in tokenized_sents])
     list_of_words_len = [len(word) for sent in tokenized_sents for word in sent]  # auxiliary
     total_chars_len = sum(list_of_words_len)
     avg_chars_len = total_chars_len/len(list_of_words_len)
@@ -307,22 +303,35 @@ for path in paths:
     s_pro = 0  # subj-pron
     adv = 0  # наречия
 
+    # features for normalizing
+    nouns = 0
+    verbs = 0
+
     # lex and morph features retrieval
-    mystem_result = mystem.analyze(text)
+    output_path = path.split('\\')[-1]
+    call_string = r'C:\Users\Mike\PycharmProjects\ru-syntax\bin\mystem.exe -n -l -i -d {}' \
+                  r' tmp\{}'.format(path, output_path)
+
+    call(call_string)
+    mystem_result = open_wordlist('tmp\\'+output_path)
 
     for word_gr in mystem_result:
 
         try:
             # word_gr['analysis']:
-            gr = re.findall('\w+', word_gr['analysis'][0]['gr'])
+            gr = re.findall('\w+', word_gr.split('|')[0])
 
             if 'редк' in gr or 'устар' in gr:
                 rare_obsol += 1
 
             if 'вводн' in gr:
                 parenth += 1
-            elif 'V' in gr and 'л' in gr:
-                verbs_pers += 1
+            elif 'S' in gr:
+                nouns += 1
+            elif 'V' in gr:
+                verbs += 1
+                if 'л' in gr:
+                    verbs_pers += 1
             elif 'ADV' in gr:
                 adv += 1
             elif 'NUM' in gr:
@@ -332,9 +341,9 @@ for path in paths:
             elif 'SPRO' in gr:
                 s_pro += 1
             elif 'CONJ' in gr:
-                if word_gr['text'] in coord_conjs:
+                if gr[0] in coord_conjs:
                     coord_conjs_num += 1
-                elif word_gr['text'] in alt_conjs:
+                elif gr[0] in alt_conjs:
                     alt_conjs_num += 1
 
             if 'им' in gr:
@@ -354,8 +363,8 @@ for path in paths:
             pass
 
     # ru-syntax
-    line = r'python C:\Users\Mike\PycharmProjects\ru-syntax\ru-syntax.py {}'.format(path)
-    call(line)
+    rusyntax_call_str = r'python C:\Users\Mike\PycharmProjects\ru-syntax\ru-syntax.py {}'.format(path)
+    call(rusyntax_call_str)
 
     syntax_result = r'C:\Users\Mike\PycharmProjects\ru-syntax\out\{}'.format(path.split('\\')[-1].split('.')[0] + '.conll')
 
@@ -430,20 +439,23 @@ for path in paths:
         elif soch == 2:
             sent_three_homogen += 1
 
-    #print(number_of_sents, number_of_words, len(list_of_words_len), total_chars_len, avg_chars_len)
+    # print(number_of_sents, number_of_words, len(list_of_words_len), total_chars_len, avg_chars_len)
 
     # 7
-    first_level = [stressed_first_v, c_in_the_end, c_in_the_beginning, two_syl_open_syls,
-                   three_syl_open_syls, one_syl, two_syl]
+    first_level = [stressed_first_v / n_of_words, c_in_the_end / n_of_words, c_in_the_beginning / n_of_words,
+                   two_syl_open_syls / n_of_words, three_syl_open_syls / n_of_words, one_syl / n_of_words,
+                   two_syl / n_of_words]
     first_level_names = """stressed_first_v, c_in_the_end, c_in_the_beginning, two_syl_open_syls, three_syl_open_syls,
      one_syl, two_syl""".split()
 
     # 20
-    second_level = [one_syl_cvc, one_syl_begin_cc, two_syl_begin_cc, two_syl_1th_stressed,
-                    three_syl_2nd_stressed, two_syl_2nd_stressed, three_syl_1th_stressed,
-                    three_syl_cv_pattern, four_syl_cv_pattern, nom, acc, dat, abl,
-                    sent_simple, sent_two_homogen, sent_three_homogen, no_predic, sent_complic_soch,
-                    verbs_pers, parenth]
+    second_level = [one_syl_cvc / n_of_words, one_syl_begin_cc / n_of_words, two_syl_begin_cc / n_of_words,
+                    two_syl_1th_stressed / n_of_words, three_syl_2nd_stressed / n_of_words,
+                    two_syl_2nd_stressed / n_of_words, three_syl_1th_stressed / n_of_words,
+                    three_syl_cv_pattern / n_of_words, four_syl_cv_pattern / n_of_words, nom / n_of_sents,
+                    acc / n_of_sents, dat / n_of_sents, abl / n_of_sents, sent_simple / n_of_sents,
+                    sent_two_homogen / n_of_sents, sent_three_homogen / n_of_sents, no_predic / n_of_sents,
+                    sent_complic_soch / n_of_sents, verbs_pers / n_of_sents, parenth / n_of_sents]
     second_level_names = """one_syl_cvc, one_syl_begin_cc, two_syl_begin_cc, two_syl_1th_stressed,
                     three_syl_2nd_stressed, two_syl_2nd_stressed, three_syl_1th_stressed,
                     three_syl_cv_pattern, four_syl_cv_pattern, nom, acc, dat, abl,
@@ -451,16 +463,19 @@ for path in paths:
                     verbs_pers, parenth""".split()
 
     # 16
-    third_level = [one_syl_end_cc, two_syl_middle_cc, three_syl_begin_cc, three_syl_middle_cc,
-                   three_syl_end_cc, four_syl_cc_on_the_edge, five_syl_cv_pattern, adv, gen,
-                   ins, coord_conjs_num, sent_complic_depend, inverse, numeral, a_pro, s_pro]
+    third_level = [one_syl_end_cc / n_of_words, two_syl_middle_cc / n_of_words, three_syl_begin_cc / n_of_words,
+                   three_syl_middle_cc / n_of_words, three_syl_end_cc / n_of_words, four_syl_cc_on_the_edge / n_of_words,
+                   five_syl_cv_pattern / n_of_words, adv / verbs, gen / n_of_sents, ins / n_of_sents,
+                   coord_conjs_num / n_of_sents, sent_complic_depend / n_of_sents, inverse / n_of_sents,
+                   numeral / n_of_words, a_pro / nouns, s_pro / n_of_sents]
     third_level_names = """one_syl_end_cc, two_syl_middle_cc, three_syl_begin_cc, three_syl_middle_cc,
                    three_syl_end_cc, four_syl_cc_on_the_edge, five_syl_cv_pattern, adv, gen,
                    ins, coord_conjs_num, sent_complic_depend, inverse, numeral, a_pro, s_pro""".split()
 
     # 7
-    fourth_level = [three_syl_3rd_stressed, three_syl_cc_on_the_edge, five_syl_cc_on_the_edge,
-                    alt_conjs_num, rare_obsol, foreign, particip_clause]
+    fourth_level = [three_syl_3rd_stressed / n_of_words, three_syl_cc_on_the_edge / n_of_words,
+                    five_syl_cc_on_the_edge / n_of_words, alt_conjs_num / n_of_sents, rare_obsol / n_of_words,
+                    foreign / n_of_words, particip_clause / n_of_sents]
     fourth_level_names = """three_syl_3rd_stressed, three_syl_cc_on_the_edge, five_syl_cc_on_the_edge,
                     alt_conjs_num, rare_obsol, foreign, particip_clause""".split()
 
@@ -473,14 +488,15 @@ for path in paths:
     print('second level features are:', second_level)
     print('third level features are:', third_level)
     print('fourth level features are:', fourth_level)"""
+    a = input('sdf')
 
-#print(len(num_of_1st_class), len(num_of_2nd_class), len(num_of_3rd_class), len(num_of_4th_class), len(names_of_1st_class_feats),
-#      len(names_of_2nd_class_feats), len(names_of_3rd_class_feats), len(names_of_4th_class_feats))
+# print(len(num_of_1st_class), len(num_of_2nd_class), len(num_of_3rd_class), len(num_of_4th_class),
+# len(names_of_1st_class_feats), len(names_of_2nd_class_feats), len(names_of_3rd_class_feats),
+# len(names_of_4th_class_feats))
 
 with open(path_for_pipeline+r'\result.csv', 'w', encoding='utf-8') as writer:
     for m in range(len(num_of_1st_class)):
-        writer.write(file_names[m]+'; '+str(num_of_1st_class[m])+'; '+str(num_of_2nd_class[m])+'; '+
-                     str(num_of_3rd_class[m])+'; '+str(num_of_4th_class[m])+'; '+''.join(names_of_1st_class_feats[m])+'; '+
-                     ''.join(names_of_2nd_class_feats[m])+'; '+''.join(names_of_3rd_class_feats[m])+'; '+
-                     ''.join(names_of_4th_class_feats[m])+'\n')
-
+        writer.write(file_names[m] + '; ' + str(num_of_1st_class[m]) + '; ' + str(num_of_2nd_class[m]) + '; ' +
+                     str(num_of_3rd_class[m])+'; '+str(num_of_4th_class[m])+'; '+''.join(names_of_1st_class_feats[m])
+                     + '; ' + ''.join(names_of_2nd_class_feats[m]) + '; ' + ''.join(names_of_3rd_class_feats[m]) + '; '
+                     + ''.join(names_of_4th_class_feats[m])+'\n')

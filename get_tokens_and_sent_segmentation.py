@@ -1,4 +1,4 @@
-﻿#-*-coding=utf-8-*-
+﻿# -*-coding=utf-8-*-
 
 """
 The first version of code by Elmira Mustakimova is taken from
@@ -12,7 +12,7 @@ from html import parser
 __author__ = 'elmiram'
 
 # Splitter Regex
-regSpaces1 = re.compile(u' {2,}| +|\t+|&nbsp;| ', flags=re.U | re.DOTALL)
+regSpaces1 = re.compile(u' {2,}| +|\t+|&nbsp;| ', flags=re.U | re.DOTALL)
 regSpaces2 = re.compile(u'(?: *\r\n)+ *', flags=re.U | re.DOTALL)
 regTags = re.compile(u'</?(?:a|img|span|div|p|body|html|head)(?: [^<>]+)?>|[\0⌐-♯]+',
                      flags=re.U | re.DOTALL)
@@ -27,17 +27,16 @@ regPuncSpaceR = re.compile(u'[)\\]>}»-‒–—―.,:?!;;%‰‱··]$', flags
 regDigit = re.compile(u'^(?:[0-9]{1,2}|[0-9][0-9\\-.,]+[0-9][%‰‱]?)$',
                       flags=re.U)
 
-
 # Language Specific Regex
 
 regLat = re.compile(u'^[a-zA-Z]+$', flags=re.U)
 regCaps = re.compile(u'^[A-ZА-ЯЁ]+$', flags=re.U)  # WORD
 regCap = re.compile(u'^[A-ZА-ЯЁ]', flags=re.U)  # Word
 regPuncWords = re.compile(u'([.,!?:;·;·\\)\\]>/])([A-Za-zА-ЯЁа-яё(\\[<{«])',
-                          flags=re.U | re.DOTALL|re.I)  # punctuation inside a word
-regTokenSearch = re.compile(u'^([^A-Za-zА-ЯЁа-яё0-9]*)' +\
-                            u'([0-9,.\\-%]+|' +\
-                            u'[A-Za-zА-ЯЁа-яё0-9\\-\'`´‘’‛/@.,]+?)' +\
+                          flags=re.U | re.DOTALL | re.I)  # punctuation inside a word
+regTokenSearch = re.compile(u'^([^A-Za-zА-ЯЁа-яё0-9]*)' + \
+                            u'([0-9,.\\-%]+|' + \
+                            u'[A-Za-zА-ЯЁа-яё0-9\\-\'`´‘’‛/@.,]+?)' + \
                             u'([^A-Za-zА-ЯЁа-яё0-9]*)$',
                             flags=re.U | re.DOTALL)
 regQuotesL = re.compile(u'([\\s(\\[{<\\-])"([A-Za-zА-ЯЁа-яё0-9\\-\'`´‘’‛@.,-‒–—―•])',
@@ -45,10 +44,10 @@ regQuotesL = re.compile(u'([\\s(\\[{<\\-])"([A-Za-zА-ЯЁа-яё0-9\\-\'`´‘�
 regQuotesR = re.compile(u'([A-Za-zА-ЯЁа-яё0-9\\-\'`´‘’‛/@.,-‒–—―•.,!?:;·;·])"([\\s)\\]}>\\-.,!])',
                         flags=re.U | re.DOTALL)
 
+
 # Abbreviations
 
 def file_opener(filename):
-
     with open(filename, encoding='utf-8') as opener:
         file = opener.read()
 
@@ -56,7 +55,11 @@ def file_opener(filename):
 
     return contents
 
-abbr_puncts, abbr_names, pref, endings = file_opener('lists/abbr_puncts.txt'), file_opener('lists/abbr.txt'), file_opener('lists/prefixes.txt'), file_opener('lists/endings.txt')
+
+abbr_puncts, abbr_names, pref, endings = file_opener('lists/abbr_puncts.txt'), \
+                                         file_opener('lists/abbr.txt'), \
+                                         file_opener('lists/prefixes.txt'), \
+                                         file_opener('lists/endings.txt')
 
 # для сокращений и т.д., и т.п., т.е., 2014 г., в т.ч., какой-л., какой-н.
 
@@ -85,7 +88,7 @@ class Token:
             self.graph = u'caps'
         elif regCap.search(self.text):
             self.graph = u'cap'
-    
+
     def xml_clean(self, s):
         return s.replace(u'&', u'&amp;').replace(u'<', u'&lt;').replace(u'>', u'&gt;').replace(u'\'', u'&apos;')
 
@@ -106,16 +109,16 @@ class Token:
 # for one file; simply returns the result
 class Text:
     def __init__(self, fname='', text_in_string='', path_input=True):
-        try:
-            if path_input:
+        if path_input:
+            try:
                 f = open(fname, 'r', encoding='utf-8')
                 self.text = f.read()
                 f.close()
-            else:
-                self.text = text_in_string
-        except:
-            print (u'Error when loading text ' + fname)
-            self.text = u''
+            except:
+                print(u'Error when loading text ', fname)
+                self.text = u''
+        else:
+            self.text = text_in_string
         self.wordsCnt = 0
         self.sentsCnt = 0
         self.sentno = u''
@@ -131,7 +134,8 @@ class Text:
 
     def convert_html(self):
         self.text = regTags.sub(u'', self.text)  # deletes all tags in angle brackets
-        self.text = hPrs.unescape(self.text)  # changes all escaped characters (like &quot;) back to their normal view (like ")
+        self.text = hPrs.unescape(
+            self.text)  # changes all escaped characters (like &quot;) back to their normal view (like ")
 
     def clean_spaces(self):
         if u'\r' not in self.text:
@@ -178,7 +182,7 @@ class Text:
         if all(i.isdigit() for i in words[0]):
             return True
         return False
-    
+
     def tokenize(self):
         self.rawTokens = self.text.split(u' ')
         self.wfs = []
@@ -254,14 +258,14 @@ class Text:
             firstWord.sentencePos = u'bos'
         for iWf in range(len(self.wfs)):
             wf = self.wfs[iWf]
-            if wf.tokenType == u'punc' and\
-               regEndSentence.search(wf.text) is not None:
+            if wf.tokenType == u'punc' and \
+                            regEndSentence.search(wf.text) is not None:
                 wordR = self.get_word_r(iWf)
-                if prevWord is not None and\
-                   wordR is not None and len(wordR.text) > 0 and\
-                   (wordR.text[0].isupper() or wordR.text[0].isdigit()) and\
-                   (prevWord.text not in abbr_puncts and (len(prevWord.text) > 1 or\
-                    prevWord.text.islower())):
+                if prevWord is not None and \
+                                wordR is not None and len(wordR.text) > 0 and \
+                        (wordR.text[0].isupper() or wordR.text[0].isdigit()) and \
+                        (prevWord.text not in abbr_puncts and (len(prevWord.text) > 1 or \
+                                                                       prevWord.text.islower())):
                     if prevWord.sentencePos == u'':
                         prevWord.sentencePos = u'eos'
                     wordR.sentencePos = u'bos'
@@ -278,7 +282,7 @@ class Text:
         m = regSeparatePunc.search(punc)
         if m is None:
             return punc, punc
-        return self.add_space_to_punc(m.group(1)),\
+        return self.add_space_to_punc(m.group(1)), \
                self.add_space_to_punc(m.group(4))
 
     def add_space_to_punc(self, punc):
@@ -287,15 +291,15 @@ class Text:
         if regPuncSpaceR.search(punc):
             punc += u' '
         return punc
-    
+
     def add_punc(self):
         """Adds punctuation to the words."""
         prevPunc = u''
         prevWord = None
         for wf in self.wfs:
             if wf.tokenType == u'wf':
-                if prevWord is not None and\
-                   (prevWord.sentno != wf.sentno or u'\\n' in prevPunc):
+                if prevWord is not None and \
+                        (prevWord.sentno != wf.sentno or u'\\n' in prevPunc):
                     punc1, punc2 = self.separate_punc(prevPunc)
                 else:
                     prevPunc = self.add_space_to_punc(prevPunc)
@@ -324,8 +328,7 @@ class Text:
                     f.write(str(wf))
             f.close()
         except IOError:
-            print ('ERROR', fname)
-
+            print('ERROR', fname)
 
     def get_sentence_segmentation(self):
         total_result = []
@@ -349,12 +352,12 @@ class Text:
             prev_splitter_position = 0
             flag = False
 
-            for i in range(len(sent)-2):
+            for i in range(len(sent) - 2):
 
-                if sent[i][0] in ['.', '?', '!'] and sent[i+1] == '-' and sent[i+2][0].isupper():
+                if sent[i][0] in ['.', '?', '!'] and sent[i + 1] == '-' and sent[i + 2][0].isupper():
                     flag = True
-                    additional_segmentation.append(sent[prev_splitter_position: i+1])
-                    prev_splitter_position = i+1
+                    additional_segmentation.append(sent[prev_splitter_position: i + 1])
+                    prev_splitter_position = i + 1
 
                 if i == len(sent) - 3:
                     additional_segmentation.append((sent[prev_splitter_position:]))
@@ -382,7 +385,7 @@ class Corpus:
 
     def process_dir(self, dirname, outdirname, restricted=None):
         if restricted is None:
-            restricted = []     # directories to be omitted
+            restricted = []  # directories to be omitted
         restricted = set(restricted)
         totalWords = 0
         for root, dirs, files in os.walk(dirname):
@@ -390,7 +393,7 @@ class Corpus:
             if len(curdirnames & restricted) > 0:
                 # print u'Skipping ' + root
                 continue
-            print (u'Processing %s : currently %s words.' % (root, totalWords))
+            print(u'Processing %s : currently %s words.' % (root, totalWords))
             for fname in files:
                 if not fname.endswith(u'.txt'):
                     continue
@@ -402,7 +405,7 @@ class Corpus:
                 # write the output to the output directory
                 fname_tokenized = fname
                 fname_tokenized = re.sub(u'^[^/\\\\]+([/\\\\])', outdirname + u'\\1',
-                                  fname_tokenized)
+                                         fname_tokenized)
                 fname_tokenized = fname_tokenized.replace(u'\'', u'_').replace(u'"', u'_')
                 outPath = os.path.dirname(fname_tokenized)
                 if not os.path.exists(outPath):
@@ -412,7 +415,3 @@ class Corpus:
 
 
 # to get the segmentation
-"""t = Text(fname=r'', text_in_string='', path_input=True)
-print(t.process())
-a = t.get_sentence_segmentation()
-print(a)"""
