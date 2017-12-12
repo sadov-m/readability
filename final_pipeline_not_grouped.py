@@ -9,22 +9,15 @@ path_for_pipeline = input('type in the path to a folder with texts to analyze: '
 # C:\Users\Mike\PycharmProjects\readability\texts_acc_to_classes\3
 file_names = []
 num_of_1st_class = []
-names_of_1st_class_feats = []
 
 num_of_2nd_class_W = []
-names_of_2nd_class_feats_W = []
 num_of_2nd_class_S = []
-names_of_2nd_class_feats_S = []
 
 num_of_3rd_class_W = []
-names_of_3rd_class_feats_W = []
 num_of_3rd_class_S = []
-names_of_3rd_class_feats_S = []
 
 num_of_4th_class_W = []
-names_of_4th_class_feats_W = []
 num_of_4th_class_S = []
-names_of_4th_class_feats_S = []
 
 paths = extracting_texts_paths(path_for_pipeline)
 
@@ -62,23 +55,12 @@ def open_wordlist(path_to_txt):
     return wordlist
 
 
-def get_data_for_clusterization(list_for_num, list_of_num, list_for_names, list_of_names):
-    list_for_num.append(sum([elem for elem in list_of_num if elem > 0]))
-
-    temp = []
-    for l in range(len(list_of_num)):
-        if list_of_num[l] > 0:
-            temp.append(list_of_names[l])
-
-    list_for_names.append(' '.join(temp))
-
-
 alt_conjs, coord_conjs = open_wordlist('lex_dicts/противительные_союзы.txt'), open_wordlist('lex_dicts/сочинительные_союзы.txt')
 
 for path in paths:
 
     with open(path, encoding='utf-8') as file_opener:
-        text = file_opener.read()
+        text = file_opener.read().strip()
         file_names.append(path)
 
     # sentense splitting + tokenization
@@ -432,7 +414,7 @@ for path in paths:
 
             if elem[3] == 'NID':
                 foreign += 1
-            elif elem[3] == 'PARTCP':
+            elif elem[3] == 'PARTCP' and elem[7] == 'опред':
                 particip_clause += 1
 
         for i in range(len(predic_ids)):
@@ -456,8 +438,7 @@ for path in paths:
     first_level = [stressed_first_v / n_of_words, c_in_the_end / n_of_words, c_in_the_beginning / n_of_words,
                    two_syl_open_syls / n_of_words, three_syl_open_syls / n_of_words, one_syl / n_of_words,
                    two_syl / n_of_words]
-    first_level_names = """stressed_first_v, c_in_the_end, c_in_the_beginning, two_syl_open_syls, three_syl_open_syls,
-     one_syl, two_syl""".split()
+    num_of_1st_class.append(first_level)
 
     # 20
     second_level = [one_syl_cvc / n_of_words, one_syl_begin_cc / n_of_words, two_syl_begin_cc / n_of_words,
@@ -467,15 +448,10 @@ for path in paths:
                     acc / n_of_sents, dat / n_of_sents, abl / n_of_sents, sent_simple / n_of_sents,
                     sent_two_homogen / n_of_sents, sent_three_homogen / n_of_sents, no_predic / n_of_sents,
                     sent_complic_soch / n_of_sents, verbs_pers / n_of_sents, parenth / n_of_sents]
-    second_level_names = """one_syl_cvc, one_syl_begin_cc, two_syl_begin_cc, two_syl_1th_stressed,
-                    three_syl_2nd_stressed, two_syl_2nd_stressed, three_syl_1th_stressed,
-                    three_syl_cv_pattern, four_syl_cv_pattern, nom, acc, dat, abl,
-                    sent_simple, sent_two_homogen, sent_three_homogen, no_predic, sent_complic_soch,
-                    verbs_pers, parenth""".split()
     second_level_W_norm = second_level[:][:9]
-    second_level_W_names = second_level_names[:][:9]
     second_level_S_norm = second_level[:][9:]
-    second_level_S_names = second_level_names[:][9:]
+    num_of_2nd_class_W.append(second_level_W_norm)
+    num_of_2nd_class_S.append(second_level_S_norm)
 
     # 16
     third_level = [one_syl_end_cc / n_of_words, two_syl_middle_cc / n_of_words, three_syl_begin_cc / n_of_words,
@@ -483,54 +459,71 @@ for path in paths:
                    five_syl_cv_pattern / n_of_words, adv / verbs, gen / n_of_sents, ins / n_of_sents,
                    coord_conjs_num / n_of_sents, sent_complic_depend / n_of_sents, inverse / n_of_sents,
                    numeral / n_of_words, a_pro / nouns, s_pro / n_of_sents]
-    third_level_names = """one_syl_end_cc, two_syl_middle_cc, three_syl_begin_cc, three_syl_middle_cc,
-                   three_syl_end_cc, four_syl_cc_on_the_edge, five_syl_cv_pattern, adv, gen,
-                   ins, coord_conjs_num, sent_complic_depend, inverse, numeral, a_pro, s_pro""".split()
     third_level_W_norm = third_level[:][:8] + third_level[:][13:15]
-    third_level_W_names = third_level_names[:][:8] + third_level_names[:][13:15]
     third_level_S_norm = third_level[:][8:13] + [third_level[:][15]]
-    third_level_S_names = third_level_names[:][8:13] + [third_level_names[:][15]]
+    num_of_3rd_class_W.append(third_level_W_norm)
+    num_of_3rd_class_S.append(third_level_S_norm)
 
     # 7
     fourth_level = [three_syl_3rd_stressed / n_of_words, three_syl_cc_on_the_edge / n_of_words,
                     five_syl_cc_on_the_edge / n_of_words, alt_conjs_num / n_of_sents, rare_obsol / n_of_words,
                     foreign / n_of_words, particip_clause / n_of_sents]
-    fourth_level_names = """three_syl_3rd_stressed, three_syl_cc_on_the_edge, five_syl_cc_on_the_edge,
-                    alt_conjs_num, rare_obsol, foreign, particip_clause""".split()
     fourth_level_W_norm = fourth_level[:][:3] + fourth_level[:][4:6]
-    fourth_level_W_names = fourth_level_names[:][:3] + fourth_level_names[:][4:6]
     fourth_level_S_norm = [fourth_level[:][3]] + [fourth_level[:][6]]
-    fourth_level_S_names = [fourth_level_names[:][3]] + [fourth_level_names[:][6]]
+    num_of_4th_class_W.append(fourth_level_W_norm)
+    num_of_4th_class_S.append(fourth_level_S_norm)
 
-    get_data_for_clusterization(num_of_1st_class, first_level, names_of_1st_class_feats, first_level_names)
-    get_data_for_clusterization(num_of_2nd_class_W, second_level_W_norm, names_of_2nd_class_feats_W,
-                                second_level_W_names)
-    get_data_for_clusterization(num_of_2nd_class_S, second_level_S_norm, names_of_2nd_class_feats_S,
-                                second_level_S_names)
-    get_data_for_clusterization(num_of_3rd_class_W, third_level_W_norm, names_of_3rd_class_feats_W,
-                                third_level_W_names)
-    get_data_for_clusterization(num_of_3rd_class_S, third_level_S_norm, names_of_3rd_class_feats_S,
-                                third_level_S_names)
-    get_data_for_clusterization(num_of_4th_class_W, fourth_level_W_norm, names_of_4th_class_feats_W,
-                                fourth_level_W_names)
-    get_data_for_clusterization(num_of_4th_class_S, fourth_level_S_norm, names_of_4th_class_feats_S,
-                                fourth_level_S_names)
+first_level_names = """stressed_first_v, c_in_the_end, c_in_the_beginning, two_syl_open_syls, three_syl_open_syls,
+     one_syl, two_syl""".split()
+first_level_names = [string+'_W' for string in first_level_names]
 
-    """print('first level features are:', first_level)
-    print('second level features are:', second_level)
-    print('third level features are:', third_level)
-    print('fourth level features are:', fourth_level)"""
+second_level_names = """one_syl_cvc, one_syl_begin_cc, two_syl_begin_cc, two_syl_1th_stressed,
+                    three_syl_2nd_stressed, two_syl_2nd_stressed, three_syl_1th_stressed,
+                    three_syl_cv_pattern, four_syl_cv_pattern, nom, acc, dat, abl,
+                    sent_simple, sent_two_homogen, sent_three_homogen, no_predic, sent_complic_soch,
+                    verbs_pers, parenth""".split()
+second_level_W_names = second_level_names[:][:9]
+second_level_W_names = [string + '_W' for string in second_level_W_names]
+second_level_S_names = second_level_names[:][9:]
+second_level_S_names = [string + '_S' for string in second_level_S_names]
 
-# print(len(num_of_1st_class), len(num_of_2nd_class), len(num_of_3rd_class), len(num_of_4th_class),
-# len(names_of_1st_class_feats), len(names_of_2nd_class_feats), len(names_of_3rd_class_feats),
-# len(names_of_4th_class_feats))
+third_level_names = """one_syl_end_cc, two_syl_middle_cc, three_syl_begin_cc, three_syl_middle_cc,
+                   three_syl_end_cc, four_syl_cc_on_the_edge, five_syl_cv_pattern, adv, gen,
+                   ins, coord_conjs_num, sent_complic_depend, inverse, numeral, a_pro, s_pro""".split()
+third_level_W_names = third_level_names[:][:8] + third_level_names[:][13:15]
+third_level_W_names = [string + '_W' for string in third_level_W_names]
+third_level_S_names = third_level_names[:][8:13] + [third_level_names[:][15]]
+third_level_S_names = [string + '_S' for string in third_level_S_names]
+
+fourth_level_names = """three_syl_3rd_stressed, three_syl_cc_on_the_edge, five_syl_cc_on_the_edge,
+                    alt_conjs_num, rare_obsol, foreign, particip_clause""".split()
+fourth_level_W_names = fourth_level_names[:][:3] + fourth_level_names[:][4:6]
+fourth_level_W_names = [string + '_W' for string in fourth_level_W_names]
+fourth_level_S_names = [fourth_level_names[:][3]] + [fourth_level_names[:][6]]
+fourth_level_S_names = [string + '_S' for string in fourth_level_S_names]
 
 with open(path_for_pipeline+r'\result.csv', 'w', encoding='utf-8') as writer:
-    for m in range(len(num_of_1st_class)):
-        writer.write(file_names[m] + '\t' + str(num_of_1st_class[m]) + '\t' + str(num_of_2nd_class_W[m]) + '\t' +
-                     str(num_of_2nd_class_S[m]) + '\t' + str(num_of_3rd_class_W[m]) + '\t' + str(num_of_3rd_class_S[m])
-                     + '\t' + str(num_of_4th_class_W[m]) + '\t' + str(num_of_4th_class_S[m]) + '\t'
-                     + names_of_1st_class_feats[m] + '\t' + names_of_2nd_class_feats_W[m] + '\t'
-                     + names_of_2nd_class_feats_S[m] + '\t' + names_of_3rd_class_feats_W[m] + '\t'
-                     + names_of_3rd_class_feats_S[m] + '\t' + names_of_4th_class_feats_W[m] +
-                     '\t' + names_of_4th_class_feats_S[m] + '\n')
+    writer.write('filename' + '\t' + '\t'.join(first_level_names) + '\t' + '\t'.join(second_level_W_names) + '\t' +
+                 '\t'.join(second_level_S_names) + '\t' + '\t'.join(third_level_W_names) + '\t' +
+                 '\t'.join(third_level_S_names) + '\t' + '\t'.join(fourth_level_W_names) + '\t' +
+                 '\t'.join(fourth_level_S_names) + '\n')
+
+    length = len(file_names) - 1
+    for m in range(len(file_names)):
+
+        if m != length:
+            writer.write(file_names[m] + '\t' + '\t'.join(list(map(str, num_of_1st_class[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_2nd_class_W[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_2nd_class_S[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_3rd_class_W[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_3rd_class_S[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_4th_class_W[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_4th_class_S[m]))) + '\n')
+        else:
+            writer.write(file_names[m] + '\t' + '\t'.join(list(map(str, num_of_1st_class[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_2nd_class_W[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_2nd_class_S[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_3rd_class_W[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_3rd_class_S[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_4th_class_W[m]))) + '\t' +
+                         '\t'.join(list(map(str, num_of_4th_class_S[m]))))
