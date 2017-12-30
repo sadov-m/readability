@@ -1,4 +1,0 @@
-filename, Flesch-Kincaid, Coleman-Liau index, Dale-Chale readability formula, readability level (SMOG), Automated Readability Index, # of chars, # of spaces, # of letters, # of words, # of sentences, # of complex words, # of simple words, average # of words per sentence, average # of syllables per sentence, % of complex words
-gaidar_stone.txt, 1.862, 3.67, 4.253, 3.474, 3.002, 1721, 352, 1288, 266, 20, 3, 263, 13.3, 1.981, 1.128
-steel_ring.txt, 5.235, 5.801, 4.396, 4.739, 5.415, 2446, 458, 1857, 348, 32, 9, 339, 10.875, 2.273, 2.586
-text_whitebim.txt, 3.162, 3.519, 3.914, 4.062, 2.861, 2375, 497, 1734, 350, 34, 7, 343, 10.294, 2.14, 2.0
