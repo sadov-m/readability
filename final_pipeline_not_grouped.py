@@ -127,11 +127,11 @@ for path in paths:
 
     with open(path, encoding='utf-8') as file_opener:
         text = file_opener.read().strip()
-        texts.append(text)
         file_names.append(path)
 
     # sentense splitting + tokenization
     tokenizer = get_tokens_and_sent_segmentation.Text(fname=r'', text_in_string=text, path_input=False)
+    texts.append(text.replace(',', ';'))
     tokenizer.process()
     # removing all the punctuation from tokens so as to count number of words in text
     tokenized_sents = [[token for token in sent if token.isalnum()] for sent in tokenizer.get_sentence_segmentation()]
@@ -473,7 +473,7 @@ for path in paths:
                 nouns += 1
             elif 'V' in gr:
                 verbs += 1
-                if 'л' in gr:
+                if 'пр' not in gr and 'деепр' not in gr and 'инф' not in gr:
                     verbs_pers += 1
                     verbs_pers_all[-1].append(gr[0])
             elif 'ADV' in gr:
@@ -559,7 +559,7 @@ for path in paths:
     inverse_all.append([])
 
     for sent in sents:
-        sent_in_str = ' '.join([elem[1] for elem in sent])
+        sent_in_str = ' '.join([elem[1] for elem in sent]).replace(',', ';')
         predic = False
         predic_ids = []
         root_ids = []
@@ -686,59 +686,59 @@ fourth_level_S_names = [fourth_level_names[:][3]] + [fourth_level_names[:][6]]
 fourth_level_S_names = [string + '_S' for string in fourth_level_S_names]
 
 with open(path_for_pipeline+r'/result.csv', 'w', encoding='utf-8') as writer:
-    writer.write('filename' + 'text' + '\t' + '\t'.join(first_level_names) + '\t' + '\t'.join(second_level_W_names) +
-                 '\t' + '\t'.join(second_level_S_names) + '\t' + '\t'.join(third_level_W_names) + '\t' +
-                 '\t'.join(third_level_S_names) + '\t' + '\t'.join(fourth_level_W_names) + '\t' +
-                 '\t'.join(fourth_level_S_names) + '\t' + 'avg_len_in_chars' + '\t' + 'len_in_chars' + '\t' +
-                 'len_in_words' + '\n')
+    writer.write('filename' + ',' + 'text' + ',' + ','.join(first_level_names) + ',' +
+                 ','.join(second_level_W_names) + ',' + ','.join(second_level_S_names) + ',' +
+                 ','.join(third_level_W_names) + ',' + ','.join(third_level_S_names) + ',' +
+                 ','.join(fourth_level_W_names) + ',' + ','.join(fourth_level_S_names) + ',' +
+                 'avg_len_in_chars' + ',' + 'len_in_chars' + ',' + 'len_in_words' + '\n')
 
     length = len(file_names) - 1
     for m in range(len(file_names)):
 
-        string_to_write = file_names[m] + '\t' + texts[m] + '\t' + '\t'.join(list(map(str, num_of_1st_class[m]))) + '\t' +\
-                         '\t'.join(list(map(str, num_of_2nd_class_W[m]))) + '\t' +\
-                         '\t'.join(list(map(str, num_of_2nd_class_S[m]))) + '\t' +\
-                         '\t'.join(list(map(str, num_of_3rd_class_W[m]))) + '\t' +\
-                         '\t'.join(list(map(str, num_of_3rd_class_S[m]))) + '\t' +\
-                         '\t'.join(list(map(str, num_of_4th_class_W[m]))) + '\t' +\
-                         '\t'.join(list(map(str, num_of_4th_class_S[m]))) + '\t' + str(avg_chars_lens[m]) +\
-                         '\t' + str(total_chars_lens[m]) + '\t' + str(total_words_nums[m])
+        string_to_write = file_names[m] + ',' + texts[m] + ',' + ','.join(list(map(str, num_of_1st_class[m]))) + ',' +\
+                         ','.join(list(map(str, num_of_2nd_class_W[m]))) + ',' +\
+                         ','.join(list(map(str, num_of_2nd_class_S[m]))) + ',' +\
+                         ','.join(list(map(str, num_of_3rd_class_W[m]))) + ',' +\
+                         ','.join(list(map(str, num_of_3rd_class_S[m]))) + ',' +\
+                         ','.join(list(map(str, num_of_4th_class_W[m]))) + ',' +\
+                         ','.join(list(map(str, num_of_4th_class_S[m]))) + ',' + str(avg_chars_lens[m]) +\
+                         ',' + str(total_chars_lens[m]) + ',' + str(total_words_nums[m])
 
         if m != length:
             writer.write(string_to_write + '\n')
         else:
             writer.write(string_to_write)
 
-header_for_detailed = 'text' + '\t' + '\t'.join(first_level_names) + '\t' + '\t'.join(second_level_W_names) + '\t' +\
-    '\t'.join(second_level_S_names) + '\t' + '\t'.join(third_level_W_names) + '\t' + '\t'.join(third_level_S_names) +\
-    '\t' + '\t'.join(fourth_level_W_names) + '\t' + '\t'.join(fourth_level_S_names) + '\n'
+header_for_detailed = 'text' + ',' + ','.join(first_level_names) + ',' + ','.join(second_level_W_names) + ',' +\
+    ','.join(second_level_S_names) + ',' + ','.join(third_level_W_names) + ',' + ','.join(third_level_S_names) +\
+    ',' + ','.join(fourth_level_W_names) + ',' + ','.join(fourth_level_S_names) + '\n'
 
 os.mkdir(os.path.join(path_for_pipeline, 'detailed_report'))
 
 for j in range(len(texts)):
     with open(path_for_pipeline+r'/detailed_report/{}.csv'.format(str(j)), 'w', encoding='utf-8') as file:
         file.write(header_for_detailed)
-        file.write(texts[j] + '\t' + ';'.join(stressed_first_v_all[j]) + '\t' + ';'.join(c_in_the_end_all[j]) + '\t' +
-                   ';'.join(c_in_the_beginning_all[j]) + '\t' + ';'.join(two_syl_open_syls_all[j]) + '\t' +
-                   ';'.join(three_syl_open_syls_all[j]) + '\t' + ';'.join(one_syl_all[j]) + '\t' +
-                   ';'.join(two_syl_all[j]) + '\t' + ';'.join(one_syl_cvc_all[j]) + '\t' +
-                   ';'.join(one_syl_begin_cc_all[j]) + '\t' + ';'.join(two_syl_begin_cc_all[j]) + '\t' +
-                   ';'.join(two_syl_1th_stressed_all[j]) + '\t' + ';'.join(three_syl_2nd_stressed_all[j]) + '\t' +
-                   ';'.join(two_syl_2nd_stressed_all[j]) + '\t' + ';'.join(three_syl_1th_stressed_all[j]) + '\t' +
-                   ';'.join(three_syl_cv_pattern_all[j]) + '\t' + ';'.join(four_syl_cv_pattern_all[j]) + '\t' +
-                   ';'.join(nom_all[j]) + '\t' + ';'.join(acc_all[j]) + '\t' + ';'.join(dat_all[j]) + '\t' +
-                   ';'.join(abl_all[j]) + '\t' + ';'.join(sent_simple_all[j]) + '\t' +
-                   ';'.join(sent_two_homogen_all[j]) + '\t' + ';'.join(sent_three_homogen_all[j]) + '\t' +
-                   ';'.join(no_predic_all[j]) + '\t' + ';'.join(sent_complic_soch_all[j]) + '\t' +
-                   ';'.join(verbs_pers_all[j]) + '\t' + ';'.join(parenth_all[j]) + '\t' +
-                   ';'.join(one_syl_end_cc_all[j]) + '\t' + ';'.join(two_syl_middle_cc_all[j]) + '\t' +
-                   ';'.join(three_syl_begin_cc_all[j]) + '\t' + ';'.join(three_syl_middle_cc_all[j]) + '\t' +
-                   ';'.join(three_syl_end_cc_all[j]) + '\t' + ';'.join(four_syl_cc_on_the_edge_all[j]) + '\t' +
-                   ';'.join(five_syl_cv_pattern_all[j]) + '\t' + ';'.join(adv_all[j]) + '\t' +
-                   ';'.join(numeral_all[j]) + '\t' + ';'.join(a_pro_all[j]) + '\t' + ';'.join(gen_all[j]) + '\t' +
-                   ';'.join(ins_all[j]) + '\t' + ';'.join(coord_conjs_num_all[j]) +
-                   ';'.join(sent_complic_depend_all[j]) + '\t' + ';'.join(inverse_all[j]) + '\t' +
-                   ';'.join(s_pro_all[j]) + '\t' + ';'.join(three_syl_3rd_stressed_all[j]) + '\t' +
-                   ';'.join(three_syl_cc_on_the_edge_all[j]) + '\t' + ';'.join(five_syl_cc_on_the_edge_all[j]) + '\t' +
-                   ';'.join(rare_obsol_all[j]) + '\t' + ';'.join(foreign_all[j]) + '\t' +
-                   ';'.join(alt_conjs_num_all[j]) + '\t' + ';'.join(particip_clause_all[j]))
+        file.write(texts[j] + ',' + ';'.join(stressed_first_v_all[j]) + ',' + ';'.join(c_in_the_end_all[j]) + ',' +
+                   ';'.join(c_in_the_beginning_all[j]) + ',' + ';'.join(two_syl_open_syls_all[j]) + ',' +
+                   ';'.join(three_syl_open_syls_all[j]) + ',' + ';'.join(one_syl_all[j]) + ',' +
+                   ';'.join(two_syl_all[j]) + ',' + ';'.join(one_syl_cvc_all[j]) + ',' +
+                   ';'.join(one_syl_begin_cc_all[j]) + ',' + ';'.join(two_syl_begin_cc_all[j]) + ',' +
+                   ';'.join(two_syl_1th_stressed_all[j]) + ',' + ';'.join(three_syl_2nd_stressed_all[j]) + ',' +
+                   ';'.join(two_syl_2nd_stressed_all[j]) + ',' + ';'.join(three_syl_1th_stressed_all[j]) + ',' +
+                   ';'.join(three_syl_cv_pattern_all[j]) + ',' + ';'.join(four_syl_cv_pattern_all[j]) + ',' +
+                   ';'.join(nom_all[j]) + ',' + ';'.join(acc_all[j]) + ',' + ';'.join(dat_all[j]) + ',' +
+                   ';'.join(abl_all[j]) + ',' + ';'.join(sent_simple_all[j]) + ',' +
+                   ';'.join(sent_two_homogen_all[j]) + ',' + ';'.join(sent_three_homogen_all[j]) + ',' +
+                   ';'.join(no_predic_all[j]) + ',' + ';'.join(sent_complic_soch_all[j]) + ',' +
+                   ';'.join(verbs_pers_all[j]) + ',' + ';'.join(parenth_all[j]) + ',' +
+                   ';'.join(one_syl_end_cc_all[j]) + ',' + ';'.join(two_syl_middle_cc_all[j]) + ',' +
+                   ';'.join(three_syl_begin_cc_all[j]) + ',' + ';'.join(three_syl_middle_cc_all[j]) + ',' +
+                   ';'.join(three_syl_end_cc_all[j]) + ',' + ';'.join(four_syl_cc_on_the_edge_all[j]) + ',' +
+                   ';'.join(five_syl_cv_pattern_all[j]) + ',' + ';'.join(adv_all[j]) + ',' +
+                   ';'.join(numeral_all[j]) + ',' + ';'.join(a_pro_all[j]) + ',' + ';'.join(gen_all[j]) + ',' +
+                   ';'.join(ins_all[j]) + ',' + ';'.join(coord_conjs_num_all[j]) + ',' +
+                   ';'.join(sent_complic_depend_all[j]) + ',' + ';'.join(inverse_all[j]) + ',' +
+                   ';'.join(s_pro_all[j]) + ',' + ';'.join(three_syl_3rd_stressed_all[j]) + ',' +
+                   ';'.join(three_syl_cc_on_the_edge_all[j]) + ',' + ';'.join(five_syl_cc_on_the_edge_all[j]) + ',' +
+                   ';'.join(rare_obsol_all[j]) + ',' + ';'.join(foreign_all[j]) + ',' +
+                   ';'.join(alt_conjs_num_all[j]) + ',' + ';'.join(particip_clause_all[j]))
