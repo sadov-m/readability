@@ -119,8 +119,8 @@ def open_wordlist(path_to_txt):
 
 
 # loading lists of conjunctions for tokenization
-alt_conjs, coord_conjs = open_wordlist('lex_dicts/противительные_союзы.txt'),\
-                         open_wordlist('lex_dicts/сочинительные_союзы.txt')
+alt_conjs, coord_conjs = open_wordlist(os.path.dirname(__file__)+'/lex_dicts/противительные_союзы.txt'),\
+                         open_wordlist(os.path.dirname(__file__)+'/lex_dicts/сочинительные_союзы.txt')
 
 # main loop
 for path in paths:
@@ -131,7 +131,7 @@ for path in paths:
 
     # sentense splitting + tokenization
     tokenizer = get_tokens_and_sent_segmentation.Text(fname=r'', text_in_string=text, path_input=False)
-    texts.append(text.replace(',', ';'))
+    texts.append(text.replace(',', ' <comma> '))
     tokenizer.process()
     # removing all the punctuation from tokens so as to count number of words in text
     tokenized_sents = [[token for token in sent if token.isalnum()] for sent in tokenizer.get_sentence_segmentation()]
@@ -139,9 +139,11 @@ for path in paths:
     # plain formal features: see variables names
     n_of_sents = len(tokenized_sents)
     n_of_words = sum([len(sent) for sent in tokenized_sents])
-    list_of_words_len = [len(word) for sent in tokenized_sents for word in sent]  # auxiliary
-    total_chars_len = sum(list_of_words_len)
+    list_of_words_len = [len(word) for sent in tokenized_sents for word in sent]  # not feature var
+    total_chars_len = sum(list_of_words_len)  # also not feature var
     avg_chars_len = total_chars_len/len(list_of_words_len)
+
+    # TO_DO: make it normalized!
 
     avg_chars_lens.append(avg_chars_len)
     total_chars_lens.append(total_chars_len)
@@ -403,9 +405,6 @@ for path in paths:
                     five_syl_cc_on_the_edge += 1
                     five_syl_cc_on_the_edge_all[-1].append(word)
 
-    # mystem analyzer
-    analyzed_sents = []
-
     # lex features
     parenth = 0  # Вводные слова
     rare_obsol = 0  # Редко употребляемые/устаревшие слова
@@ -444,17 +443,17 @@ for path in paths:
     s_pro_all.append([])
     adv_all.append([])
 
-    # features for normalizing
+    # counters for normalizing all the morph features defined above
     nouns = 0
     verbs = 0
 
     # lex and morph features retrieval
     output_path = path.split('\\')[-1]
-    call_string = r'C:\Users\Mike\PycharmProjects\ru-syntax\bin\mystem.exe -n -l -i -d {}' \
+    call_string = r'C:/Users/Mike/PycharmProjects/ru-syntax/bin/mystem.exe -cgnid {}' \
                   r' tmp\{}'.format(path, output_path)
 
     call(call_string)
-    mystem_result = open_wordlist('tmp\\'+output_path)
+    mystem_result = open_wordlist('tmp/'+output_path)
 
     for word_gr in mystem_result:
 
@@ -479,7 +478,7 @@ for path in paths:
             elif 'ADV' in gr:
                 adv += 1
                 adv_all[-1].append(gr[0])
-            elif 'NUM' in gr:
+            elif 'NUM' in gr:  # 'NUM' could be extraced poorly, might require rethinking
                 numeral += 1
                 numeral_all[-1].append(gr[0])
             elif 'APRO' in gr:
@@ -495,25 +494,6 @@ for path in paths:
                 elif gr[0] in alt_conjs:
                     alt_conjs_num += 1
                     alt_conjs_num_all[-1].append(gr[0])
-
-            if 'им' in gr:
-                nom += 1
-                nom_all[-1].append(gr[0])
-            elif 'род' in gr:
-                gen += 1
-                gen_all[-1].append(gr[0])
-            elif 'вин' in gr:
-                acc += 1
-                acc_all[-1].append(gr[0])
-            elif 'дат' in gr:
-                dat += 1
-                dat_all[-1].append(gr[0])
-            elif 'твор' in gr:
-                ins += 1
-                ins_all[-1].append(gr[0])
-            elif 'пр' in gr:
-                abl += 1
-                abl_all[-1].append(gr[0])
 
         except:
             pass
@@ -559,14 +539,35 @@ for path in paths:
     inverse_all.append([])
 
     for sent in sents:
-        sent_in_str = ' '.join([elem[1] for elem in sent]).replace(',', ';')
+        sent_in_str = ' '.join([elem[1] for elem in sent]).replace(',', ' <comma> ')
         predic = False
         predic_ids = []
         root_ids = []
-        not_simple = False
+        not_simple_syntax = False
         soch = 0
 
         for i, elem in enumerate(sent):
+
+            # case features extraction starts here
+            if 'nom' in elem[5]:
+                nom += 1
+                nom_all[-1].append(elem[1])
+            elif 'gen' in elem[5]:
+                gen += 1
+                gen_all[-1].append(elem[1])
+            elif 'acc' in elem[5]:
+                acc += 1
+                acc_all[-1].append(elem[1])
+            elif 'dat' in elem[5]:
+                dat += 1
+                dat_all[-1].append(elem[1])
+            elif 'ins' in elem[5]:
+                ins += 1
+                ins_all[-1].append(elem[1])
+            elif 'abl' in elem[5]:
+                abl += 1
+                abl_all[-1].append(elem[1])
+
             if elem[7] == 'предик':
                 predic = True
                 predic_ids.append(int(elem[0]))
@@ -576,7 +577,7 @@ for path in paths:
             elif elem[7] == 'опред' or 'PUNC':
                 pass
             else:
-                not_simple = True
+                not_simple_syntax = True
 
             if elem[7] == 'сент-соч':
                 sent_complic_soch += 1
@@ -600,7 +601,7 @@ for path in paths:
                 inverse_all[-1].append(sent_in_str)
                 break
 
-        if len(sent) < 5 and predic and not not_simple:
+        if len(sent) < 5 and predic and not not_simple_syntax:
             sent_simple += 1
             sent_simple_all[-1].append(sent_in_str)
 
@@ -716,29 +717,29 @@ header_for_detailed = 'text' + ',' + ','.join(first_level_names) + ',' + ','.joi
 os.mkdir(os.path.join(path_for_pipeline, 'detailed_report'))
 
 for j in range(len(texts)):
-    with open(path_for_pipeline+r'/detailed_report/{}.csv'.format(str(j)), 'w', encoding='utf-8') as file:
+    with open(path_for_pipeline+r'/detailed_report/{}.csv'.format(file_names[j]), 'w', encoding='utf-8') as file:
         file.write(header_for_detailed)
-        file.write(texts[j] + ',' + ';'.join(stressed_first_v_all[j]) + ',' + ';'.join(c_in_the_end_all[j]) + ',' +
-                   ';'.join(c_in_the_beginning_all[j]) + ',' + ';'.join(two_syl_open_syls_all[j]) + ',' +
-                   ';'.join(three_syl_open_syls_all[j]) + ',' + ';'.join(one_syl_all[j]) + ',' +
-                   ';'.join(two_syl_all[j]) + ',' + ';'.join(one_syl_cvc_all[j]) + ',' +
-                   ';'.join(one_syl_begin_cc_all[j]) + ',' + ';'.join(two_syl_begin_cc_all[j]) + ',' +
-                   ';'.join(two_syl_1th_stressed_all[j]) + ',' + ';'.join(three_syl_2nd_stressed_all[j]) + ',' +
-                   ';'.join(two_syl_2nd_stressed_all[j]) + ',' + ';'.join(three_syl_1th_stressed_all[j]) + ',' +
-                   ';'.join(three_syl_cv_pattern_all[j]) + ',' + ';'.join(four_syl_cv_pattern_all[j]) + ',' +
-                   ';'.join(nom_all[j]) + ',' + ';'.join(acc_all[j]) + ',' + ';'.join(dat_all[j]) + ',' +
-                   ';'.join(abl_all[j]) + ',' + ';'.join(sent_simple_all[j]) + ',' +
-                   ';'.join(sent_two_homogen_all[j]) + ',' + ';'.join(sent_three_homogen_all[j]) + ',' +
-                   ';'.join(no_predic_all[j]) + ',' + ';'.join(sent_complic_soch_all[j]) + ',' +
-                   ';'.join(verbs_pers_all[j]) + ',' + ';'.join(parenth_all[j]) + ',' +
-                   ';'.join(one_syl_end_cc_all[j]) + ',' + ';'.join(two_syl_middle_cc_all[j]) + ',' +
-                   ';'.join(three_syl_begin_cc_all[j]) + ',' + ';'.join(three_syl_middle_cc_all[j]) + ',' +
-                   ';'.join(three_syl_end_cc_all[j]) + ',' + ';'.join(four_syl_cc_on_the_edge_all[j]) + ',' +
-                   ';'.join(five_syl_cv_pattern_all[j]) + ',' + ';'.join(adv_all[j]) + ',' +
-                   ';'.join(numeral_all[j]) + ',' + ';'.join(a_pro_all[j]) + ',' + ';'.join(gen_all[j]) + ',' +
-                   ';'.join(ins_all[j]) + ',' + ';'.join(coord_conjs_num_all[j]) + ',' +
-                   ';'.join(sent_complic_depend_all[j]) + ',' + ';'.join(inverse_all[j]) + ',' +
-                   ';'.join(s_pro_all[j]) + ',' + ';'.join(three_syl_3rd_stressed_all[j]) + ',' +
-                   ';'.join(three_syl_cc_on_the_edge_all[j]) + ',' + ';'.join(five_syl_cc_on_the_edge_all[j]) + ',' +
-                   ';'.join(rare_obsol_all[j]) + ',' + ';'.join(foreign_all[j]) + ',' +
-                   ';'.join(alt_conjs_num_all[j]) + ',' + ';'.join(particip_clause_all[j]))
+        file.write(texts[j] + ',' + ' <comma> '.join(stressed_first_v_all[j]) + ',' + ' <comma> '.join(c_in_the_end_all[j]) + ',' +
+                   ' <comma> '.join(c_in_the_beginning_all[j]) + ',' + ' <comma> '.join(two_syl_open_syls_all[j]) + ',' +
+                   ' <comma> '.join(three_syl_open_syls_all[j]) + ',' + ' <comma> '.join(one_syl_all[j]) + ',' +
+                   ' <comma> '.join(two_syl_all[j]) + ',' + ' <comma> '.join(one_syl_cvc_all[j]) + ',' +
+                   ' <comma> '.join(one_syl_begin_cc_all[j]) + ',' + ' <comma> '.join(two_syl_begin_cc_all[j]) + ',' +
+                   ' <comma> '.join(two_syl_1th_stressed_all[j]) + ',' + ' <comma> '.join(three_syl_2nd_stressed_all[j]) + ',' +
+                   ' <comma> '.join(two_syl_2nd_stressed_all[j]) + ',' + ' <comma> '.join(three_syl_1th_stressed_all[j]) + ',' +
+                   ' <comma> '.join(three_syl_cv_pattern_all[j]) + ',' + ' <comma> '.join(four_syl_cv_pattern_all[j]) + ',' +
+                   ' <comma> '.join(nom_all[j]) + ',' + ' <comma> '.join(acc_all[j]) + ',' + ' <comma> '.join(dat_all[j]) + ',' +
+                   ' <comma> '.join(abl_all[j]) + ',' + ' <comma> '.join(sent_simple_all[j]) + ',' +
+                   ' <comma> '.join(sent_two_homogen_all[j]) + ',' + ' <comma> '.join(sent_three_homogen_all[j]) + ',' +
+                   ' <comma> '.join(no_predic_all[j]) + ',' + ' <comma> '.join(sent_complic_soch_all[j]) + ',' +
+                   ' <comma> '.join(verbs_pers_all[j]) + ',' + ' <comma> '.join(parenth_all[j]) + ',' +
+                   ' <comma> '.join(one_syl_end_cc_all[j]) + ',' + ' <comma> '.join(two_syl_middle_cc_all[j]) + ',' +
+                   ' <comma> '.join(three_syl_begin_cc_all[j]) + ',' + ' <comma> '.join(three_syl_middle_cc_all[j]) + ',' +
+                   ' <comma> '.join(three_syl_end_cc_all[j]) + ',' + ' <comma> '.join(four_syl_cc_on_the_edge_all[j]) + ',' +
+                   ' <comma> '.join(five_syl_cv_pattern_all[j]) + ',' + ' <comma> '.join(adv_all[j]) + ',' +
+                   ' <comma> '.join(numeral_all[j]) + ',' + ' <comma> '.join(a_pro_all[j]) + ',' + ' <comma> '.join(gen_all[j]) + ',' +
+                   ' <comma> '.join(ins_all[j]) + ',' + ' <comma> '.join(coord_conjs_num_all[j]) + ',' +
+                   ' <comma> '.join(sent_complic_depend_all[j]) + ',' + ' <comma> '.join(inverse_all[j]) + ',' +
+                   ' <comma> '.join(s_pro_all[j]) + ',' + ' <comma> '.join(three_syl_3rd_stressed_all[j]) + ',' +
+                   ' <comma> '.join(three_syl_cc_on_the_edge_all[j]) + ',' + ' <comma> '.join(five_syl_cc_on_the_edge_all[j]) + ',' +
+                   ' <comma> '.join(rare_obsol_all[j]) + ',' + ' <comma> '.join(foreign_all[j]) + ',' +
+                   ' <comma> '.join(alt_conjs_num_all[j]) + ',' + ' <comma> '.join(particip_clause_all[j]))

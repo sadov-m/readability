@@ -9,3 +9,7 @@ K-means  0.141807  0.173419    0.226151      0.264418   0.243792    0.187497
 grouped features:
               ARI       AMI  Homogenity  Completeness  V-measure  Silhouette
 K-means  0.033302  0.066428     0.13096      0.152145    0.14076    0.441957
+
+not grouped features:
+              ARI       AMI  Homogenity  Completeness  V-measure  Silhouette
+K-means  0.300894  0.329361    0.376967      0.394781   0.385669    0.602571
