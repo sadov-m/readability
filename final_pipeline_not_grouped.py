@@ -84,6 +84,9 @@ particip_clause_all = []
 paths = extracting_texts_paths(path_for_pipeline)
 
 
+# sets with syntax roles for certain features
+syntax_roles_partcp = ['релят', 'опред', 'оп-опред']
+
 # a func to transform a word to a mask of type CVC... where C is a consonant and V is a vowel
 def get_word_mask(word):
     mask = []
@@ -144,10 +147,27 @@ for path in paths:
     avg_chars_len = total_chars_len/len(list_of_words_len)
 
     # TO_DO: make it normalized!
+    avg_chars_lens.append(avg_chars_len/12.0)
 
-    avg_chars_lens.append(avg_chars_len)
-    total_chars_lens.append(total_chars_len)
-    total_words_nums.append(n_of_words)
+    if total_chars_len < 145:
+        total_chars_lens.append(0.25)
+    elif total_chars_len < 750:
+        total_chars_lens.append(0.5)
+    elif total_chars_len < 1330:
+        total_chars_lens.append(0.75)
+    else:
+        total_chars_lens.append(1.0)
+
+    if n_of_words < 30:
+        total_words_nums.append(0.25)
+    elif n_of_words < 75:
+        total_words_nums.append(0.5)
+    elif n_of_words < 95:
+        total_words_nums.append(0.75)
+    else:
+        total_words_nums.append(1.0)
+    #total_chars_lens.append(total_chars_len)
+    #total_words_nums.append(n_of_words)
 
     # print('num of sentences:', number_of_sents, 'num of words:', number_of_words, 'total chars:', total_chars_len)
 
@@ -532,8 +552,8 @@ for path in paths:
     sent_two_homogen_all.append([])
     sent_three_homogen_all.append([])
     sent_simple_all.append([])
-    sent_complic_soch_all.append([])
-    sent_complic_depend_all.append([])
+    sent_complic_soch_all.append([''])
+    sent_complic_depend_all.append([''])
     no_predic_all.append([])
     particip_clause_all.append([])
     inverse_all.append([])
@@ -543,8 +563,9 @@ for path in paths:
         predic = False
         predic_ids = []
         root_ids = []
-        not_simple_syntax = False
+        simple_syntax = True
         soch = 0
+        heads_ids = [elem[6] for elem in sent]
 
         for i, elem in enumerate(sent):
 
@@ -568,30 +589,34 @@ for path in paths:
                 abl += 1
                 abl_all[-1].append(elem[1])
 
-            if elem[7] == 'предик':
+            if elem[7] == 'предик' and 'nom' in elem[5]:
                 predic = True
                 predic_ids.append(int(elem[0]))
                 root_ids.append(int(elem[6]))
             elif elem[7] == 'ROOT':
                 pass
-            elif elem[7] == 'опред' or 'PUNC':
+            elif elem[7] in syntax_roles_partcp + ['PUNC', 'аппрокс-порядк']:
                 pass
             else:
-                not_simple_syntax = True
+                simple_syntax = False
 
-            if elem[7] == 'сент-соч':
-                sent_complic_soch += 1
-                sent_complic_soch_all[-1].append(sent_in_str)
+            # прямая речь???
+
+            if elem[7] in ['сент-соч', 'соч-союзн']:
+                if sent_complic_soch_all[-1][-1] != sent_in_str:
+                    sent_complic_soch += 1
+                    sent_complic_soch_all[-1].append(sent_in_str)
             elif elem[7] == 'подч-союзн' or elem[7] == 'изъясн' or elem[7] == 'релят':
-                sent_complic_depend += 1
-                sent_complic_depend_all[-1].append(sent_in_str)
+                if sent_complic_depend_all[-1][-1] != sent_in_str:
+                    sent_complic_depend += 1
+                    sent_complic_depend_all[-1].append(sent_in_str)
             elif elem[7] == 'сочин':
                 soch += 1
 
             if elem[3] == 'NID':
                 foreign += 1
                 foreign_all[-1].append(elem[1])
-            elif elem[3] == 'PARTCP' and elem[7] == 'опред':
+            elif elem[3] == 'PARTCP' and elem[7] in syntax_roles_partcp and elem[0] in heads_ids:
                 particip_clause += 1
                 particip_clause_all[-1].append(sent_in_str)
 
@@ -601,7 +626,7 @@ for path in paths:
                 inverse_all[-1].append(sent_in_str)
                 break
 
-        if len(sent) < 5 and predic and not not_simple_syntax:
+        if predic and simple_syntax:
             sent_simple += 1
             sent_simple_all[-1].append(sent_in_str)
 
@@ -717,29 +742,30 @@ header_for_detailed = 'text' + ',' + ','.join(first_level_names) + ',' + ','.joi
 os.mkdir(os.path.join(path_for_pipeline, 'detailed_report'))
 
 for j in range(len(texts)):
-    with open(path_for_pipeline+r'/detailed_report/{}.csv'.format(file_names[j]), 'w', encoding='utf-8') as file:
+    report_filename = '_'.join(re.findall('\w+', file_names[j])[-3:])
+    with open(path_for_pipeline+r'/detailed_report/{}.csv'.format(report_filename), 'w', encoding='utf-8') as file:
         file.write(header_for_detailed)
-        file.write(texts[j] + ',' + ' <comma> '.join(stressed_first_v_all[j]) + ',' + ' <comma> '.join(c_in_the_end_all[j]) + ',' +
-                   ' <comma> '.join(c_in_the_beginning_all[j]) + ',' + ' <comma> '.join(two_syl_open_syls_all[j]) + ',' +
-                   ' <comma> '.join(three_syl_open_syls_all[j]) + ',' + ' <comma> '.join(one_syl_all[j]) + ',' +
-                   ' <comma> '.join(two_syl_all[j]) + ',' + ' <comma> '.join(one_syl_cvc_all[j]) + ',' +
-                   ' <comma> '.join(one_syl_begin_cc_all[j]) + ',' + ' <comma> '.join(two_syl_begin_cc_all[j]) + ',' +
-                   ' <comma> '.join(two_syl_1th_stressed_all[j]) + ',' + ' <comma> '.join(three_syl_2nd_stressed_all[j]) + ',' +
-                   ' <comma> '.join(two_syl_2nd_stressed_all[j]) + ',' + ' <comma> '.join(three_syl_1th_stressed_all[j]) + ',' +
-                   ' <comma> '.join(three_syl_cv_pattern_all[j]) + ',' + ' <comma> '.join(four_syl_cv_pattern_all[j]) + ',' +
-                   ' <comma> '.join(nom_all[j]) + ',' + ' <comma> '.join(acc_all[j]) + ',' + ' <comma> '.join(dat_all[j]) + ',' +
-                   ' <comma> '.join(abl_all[j]) + ',' + ' <comma> '.join(sent_simple_all[j]) + ',' +
-                   ' <comma> '.join(sent_two_homogen_all[j]) + ',' + ' <comma> '.join(sent_three_homogen_all[j]) + ',' +
-                   ' <comma> '.join(no_predic_all[j]) + ',' + ' <comma> '.join(sent_complic_soch_all[j]) + ',' +
-                   ' <comma> '.join(verbs_pers_all[j]) + ',' + ' <comma> '.join(parenth_all[j]) + ',' +
-                   ' <comma> '.join(one_syl_end_cc_all[j]) + ',' + ' <comma> '.join(two_syl_middle_cc_all[j]) + ',' +
-                   ' <comma> '.join(three_syl_begin_cc_all[j]) + ',' + ' <comma> '.join(three_syl_middle_cc_all[j]) + ',' +
-                   ' <comma> '.join(three_syl_end_cc_all[j]) + ',' + ' <comma> '.join(four_syl_cc_on_the_edge_all[j]) + ',' +
-                   ' <comma> '.join(five_syl_cv_pattern_all[j]) + ',' + ' <comma> '.join(adv_all[j]) + ',' +
-                   ' <comma> '.join(numeral_all[j]) + ',' + ' <comma> '.join(a_pro_all[j]) + ',' + ' <comma> '.join(gen_all[j]) + ',' +
-                   ' <comma> '.join(ins_all[j]) + ',' + ' <comma> '.join(coord_conjs_num_all[j]) + ',' +
-                   ' <comma> '.join(sent_complic_depend_all[j]) + ',' + ' <comma> '.join(inverse_all[j]) + ',' +
-                   ' <comma> '.join(s_pro_all[j]) + ',' + ' <comma> '.join(three_syl_3rd_stressed_all[j]) + ',' +
-                   ' <comma> '.join(three_syl_cc_on_the_edge_all[j]) + ',' + ' <comma> '.join(five_syl_cc_on_the_edge_all[j]) + ',' +
-                   ' <comma> '.join(rare_obsol_all[j]) + ',' + ' <comma> '.join(foreign_all[j]) + ',' +
-                   ' <comma> '.join(alt_conjs_num_all[j]) + ',' + ' <comma> '.join(particip_clause_all[j]))
+        file.write(texts[j] + ',' + ' <delim> '.join(stressed_first_v_all[j]) + ',' + ' <delim> '.join(c_in_the_end_all[j]) + ',' +
+                   ' <delim> '.join(c_in_the_beginning_all[j]) + ',' + ' <delim> '.join(two_syl_open_syls_all[j]) + ',' +
+                   ' <delim> '.join(three_syl_open_syls_all[j]) + ',' + ' <delim> '.join(one_syl_all[j]) + ',' +
+                   ' <delim> '.join(two_syl_all[j]) + ',' + ' <delim> '.join(one_syl_cvc_all[j]) + ',' +
+                   ' <delim> '.join(one_syl_begin_cc_all[j]) + ',' + ' <delim> '.join(two_syl_begin_cc_all[j]) + ',' +
+                   ' <delim> '.join(two_syl_1th_stressed_all[j]) + ',' + ' <delim> '.join(three_syl_2nd_stressed_all[j]) + ',' +
+                   ' <delim> '.join(two_syl_2nd_stressed_all[j]) + ',' + ' <delim> '.join(three_syl_1th_stressed_all[j]) + ',' +
+                   ' <delim> '.join(three_syl_cv_pattern_all[j]) + ',' + ' <delim> '.join(four_syl_cv_pattern_all[j]) + ',' +
+                   ' <delim> '.join(nom_all[j]) + ',' + ' <delim> '.join(acc_all[j]) + ',' + ' <delim> '.join(dat_all[j]) + ',' +
+                   ' <delim> '.join(abl_all[j]) + ',' + ' <delim> '.join(sent_simple_all[j]) + ',' +
+                   ' <delim> '.join(sent_two_homogen_all[j]) + ',' + ' <delim> '.join(sent_three_homogen_all[j]) + ',' +
+                   ' <delim> '.join(no_predic_all[j]) + ',' + ' <delim> '.join(sent_complic_soch_all[j]) + ',' +
+                   ' <delim> '.join(verbs_pers_all[j]) + ',' + ' <delim> '.join(parenth_all[j]) + ',' +
+                   ' <delim> '.join(one_syl_end_cc_all[j]) + ',' + ' <delim> '.join(two_syl_middle_cc_all[j]) + ',' +
+                   ' <delim> '.join(three_syl_begin_cc_all[j]) + ',' + ' <delim> '.join(three_syl_middle_cc_all[j]) + ',' +
+                   ' <delim> '.join(three_syl_end_cc_all[j]) + ',' + ' <delim> '.join(four_syl_cc_on_the_edge_all[j]) + ',' +
+                   ' <delim> '.join(five_syl_cv_pattern_all[j]) + ',' + ' <delim> '.join(adv_all[j]) + ',' +
+                   ' <delim> '.join(numeral_all[j]) + ',' + ' <delim> '.join(a_pro_all[j]) + ',' + ' <delim> '.join(gen_all[j]) + ',' +
+                   ' <delim> '.join(ins_all[j]) + ',' + ' <delim> '.join(coord_conjs_num_all[j]) + ',' +
+                   ' <delim> '.join(sent_complic_depend_all[j]) + ',' + ' <delim> '.join(inverse_all[j]) + ',' +
+                   ' <delim> '.join(s_pro_all[j]) + ',' + ' <delim> '.join(three_syl_3rd_stressed_all[j]) + ',' +
+                   ' <delim> '.join(three_syl_cc_on_the_edge_all[j]) + ',' + ' <delim> '.join(five_syl_cc_on_the_edge_all[j]) + ',' +
+                   ' <delim> '.join(rare_obsol_all[j]) + ',' + ' <delim> '.join(foreign_all[j]) + ',' +
+                   ' <delim> '.join(alt_conjs_num_all[j]) + ',' + ' <delim> '.join(particip_clause_all[j]))
