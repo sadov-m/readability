@@ -12,15 +12,22 @@ file_names = []
 texts = []
 
 num_of_1st_class = []
+str_of_1st_class = []
 
 num_of_2nd_class_W = []
 num_of_2nd_class_S = []
+str_of_2nd_class_W = []
+str_of_2nd_class_S = []
 
 num_of_3rd_class_W = []
 num_of_3rd_class_S = []
+str_of_3rd_class_W = []
+str_of_3rd_class_S = []
 
 num_of_4th_class_W = []
 num_of_4th_class_S = []
+str_of_4th_class_W = []
+str_of_4th_class_S = []
 
 avg_chars_lens = []
 total_chars_lens = []
@@ -86,6 +93,7 @@ paths = extracting_texts_paths(path_for_pipeline)
 
 # sets with syntax roles for certain features
 syntax_roles_partcp = ['релят', 'опред', 'оп-опред']
+
 
 # a func to transform a word to a mask of type CVC... where C is a consonant and V is a vowel
 def get_word_mask(word):
@@ -166,8 +174,6 @@ for path in paths:
         total_words_nums.append(0.75)
     else:
         total_words_nums.append(1.0)
-    #total_chars_lens.append(total_chars_len)
-    #total_words_nums.append(n_of_words)
 
     # print('num of sentences:', number_of_sents, 'num of words:', number_of_words, 'total chars:', total_chars_len)
 
@@ -202,7 +208,7 @@ for path in paths:
     one_syl = 0  # Слова из одного слога
     one_syl_begin_cc = 0  # Односложные слова с сочетанием согласных в начале слова
     one_syl_end_cc = 0  # Односложные слова с сочетанием согласных в конце слова
-    one_syl_cvc = 0  # Слова с одним закрытым трехбуквенным слогом?
+    one_syl_cvc = 0  # Слова с одним закрытым трехбуквенным слогом
 
     one_syl_all.append([])
     one_syl_begin_cc_all.append([])
@@ -402,8 +408,8 @@ for path in paths:
                     four_syl_cv_pattern += 1
                     four_syl_cv_pattern_all[-1].append(word)
 
-                if result[0][-1]+result[1][0] == 'CC' or result[1][-1]+result[2][0] == 'CC' or \
-                                        result[2][-1]+result[3][0] == 'CC':
+                if result[0][-1]+result[1][0] == 'CC' or result[1][-1]+result[2][0] == 'CC'\
+                        or result[2][-1]+result[3][0] == 'CC':
                     four_syl_cc_on_the_edge += 1
                     four_syl_cc_on_the_edge_all[-1].append(word)
 
@@ -420,8 +426,8 @@ for path in paths:
                     five_syl_cv_pattern += 1
                     five_syl_cv_pattern_all[-1].append(word)
 
-                if result[0][-1] + result[1][0] == 'CC' or result[1][-1] + result[2][0] == 'CC' or \
-                                        result[2][-1] + result[3][0] == 'CC' or result[3][-1] + result[4][0] == 'CC':
+                if result[0][-1] + result[1][0] == 'CC' or result[1][-1] + result[2][0] == 'CC' \
+                        or result[2][-1] + result[3][0] == 'CC' or result[3][-1] + result[4][0] == 'CC':
                     five_syl_cc_on_the_edge += 1
                     five_syl_cc_on_the_edge_all[-1].append(word)
 
@@ -463,7 +469,7 @@ for path in paths:
     s_pro_all.append([])
     adv_all.append([])
 
-    # counters for normalizing all the morph features defined above
+    # counters for normalizing some morph features defined above
     nouns = 0
     verbs = 0
 
@@ -522,7 +528,8 @@ for path in paths:
     rusyntax_call_str = r'python C:\Users\Mike\PycharmProjects\ru-syntax\ru-syntax.py {}'.format(path)
     call(rusyntax_call_str)
 
-    syntax_result = r'C:\Users\Mike\PycharmProjects\ru-syntax\out\{}'.format(path.split('\\')[-1].split('.')[0] + '.conll')
+    syntax_result = r'C:\Users\Mike\PycharmProjects\ru-syntax\out\{}'.format(path.split('\\')[-1].split('.')[0]
+                                                                             + '.conll')
 
     with open(syntax_result, encoding='utf-8') as syntax_opener:
         lines = syntax_opener.read().split('\n')
@@ -600,7 +607,7 @@ for path in paths:
             else:
                 simple_syntax = False
 
-            # прямая речь???
+            #прямая речь???
 
             if elem[7] in ['сент-соч', 'соч-союзн']:
                 if sent_complic_soch_all[-1][-1] != sent_in_str:
@@ -641,46 +648,89 @@ for path in paths:
             sent_three_homogen += 1
             sent_three_homogen_all[-1].append(sent_in_str)
 
-    # print(number_of_sents, number_of_words, len(list_of_words_len), total_chars_len, avg_chars_len)
+    w_n_str = str(n_of_words)
+    s_n_str = str(n_of_sents)
 
     # 7
     first_level = [stressed_first_v / n_of_words, c_in_the_end / n_of_words, c_in_the_beginning / n_of_words,
                    two_syl_open_syls / n_of_words, three_syl_open_syls / n_of_words, one_syl / n_of_words,
                    two_syl / n_of_words]
+    first_level_str = [str(stressed_first_v) + ' / ' + w_n_str, str(c_in_the_end) + ' / ' + w_n_str,
+                       str(c_in_the_beginning) + ' / ' + w_n_str, str(two_syl_open_syls) + ' / ' + w_n_str,
+                       str(three_syl_open_syls) + ' / ' + w_n_str, str(one_syl) + ' / ' + w_n_str,
+                       str(two_syl) + ' / ' + w_n_str]
     num_of_1st_class.append(first_level)
+    str_of_1st_class.append(first_level_str)
 
     # 20
     second_level = [one_syl_cvc / n_of_words, one_syl_begin_cc / n_of_words, two_syl_begin_cc / n_of_words,
                     two_syl_1th_stressed / n_of_words, three_syl_2nd_stressed / n_of_words,
                     two_syl_2nd_stressed / n_of_words, three_syl_1th_stressed / n_of_words,
-                    three_syl_cv_pattern / n_of_words, four_syl_cv_pattern / n_of_words, nom / n_of_sents,
-                    acc / n_of_sents, dat / n_of_sents, abl / n_of_sents, sent_simple / n_of_sents,
+                    three_syl_cv_pattern / n_of_words, four_syl_cv_pattern / n_of_words, nom / n_of_words,
+                    acc / n_of_words, dat / n_of_words, abl / n_of_words, sent_simple / n_of_sents,
                     sent_two_homogen / n_of_sents, sent_three_homogen / n_of_sents, no_predic / n_of_sents,
                     sent_complic_soch / n_of_sents, verbs_pers / n_of_sents, parenth / n_of_sents]
-    second_level_W_norm = second_level[:][:9]
-    second_level_S_norm = second_level[:][9:]
+    second_level_str = [str(one_syl_cvc) + ' / ' + w_n_str, str(one_syl_begin_cc) + ' / ' + w_n_str,
+                        str(two_syl_begin_cc) + ' / ' + w_n_str, str(two_syl_1th_stressed) + ' / ' + w_n_str,
+                        str(three_syl_2nd_stressed) + ' / ' + w_n_str, str(two_syl_2nd_stressed) + ' / ' + w_n_str,
+                        str(three_syl_1th_stressed) + ' / ' + w_n_str, str(three_syl_cv_pattern) + ' / ' + w_n_str,
+                        str(four_syl_cv_pattern) + ' / ' + w_n_str, str(nom) + ' / ' + w_n_str,
+                        str(acc) + ' / ' + w_n_str, str(dat) + ' / ' + w_n_str, str(abl) + ' / ' + w_n_str,
+                        str(sent_simple) + ' / ' + s_n_str, str(sent_two_homogen) + ' / ' + s_n_str,
+                        str(sent_three_homogen) + ' / ' + s_n_str, str(no_predic) + ' / ' + s_n_str,
+                        str(sent_complic_soch) + ' / ' + s_n_str, str(verbs_pers) + ' / ' + s_n_str,
+                        str(parenth) + ' / ' + s_n_str]
+    second_level_W_norm = second_level[:][:13]
+    second_level_S_norm = second_level[:][13:]
+    str_second_level_W_norm = second_level_str[:][:13]
+    str_second_level_S_norm = second_level_str[:][13:]
+
     num_of_2nd_class_W.append(second_level_W_norm)
     num_of_2nd_class_S.append(second_level_S_norm)
+    str_of_2nd_class_W.append(str_second_level_W_norm)
+    str_of_2nd_class_S.append(str_second_level_S_norm)
 
     # 16
     third_level = [one_syl_end_cc / n_of_words, two_syl_middle_cc / n_of_words, three_syl_begin_cc / n_of_words,
-                   three_syl_middle_cc / n_of_words, three_syl_end_cc / n_of_words, four_syl_cc_on_the_edge / n_of_words,
-                   five_syl_cv_pattern / n_of_words, adv / verbs, gen / n_of_sents, ins / n_of_sents,
-                   coord_conjs_num / n_of_sents, sent_complic_depend / n_of_sents, inverse / n_of_sents,
-                   numeral / n_of_words, a_pro / nouns, s_pro / n_of_sents]
-    third_level_W_norm = third_level[:][:8] + third_level[:][13:15]
-    third_level_S_norm = third_level[:][8:13] + [third_level[:][15]]
+                   three_syl_middle_cc / n_of_words, three_syl_end_cc / n_of_words,
+                   four_syl_cc_on_the_edge / n_of_words, five_syl_cv_pattern / n_of_words, adv / verbs,
+                   gen / n_of_words, ins / n_of_words, coord_conjs_num / n_of_sents, sent_complic_depend / n_of_sents,
+                   inverse / n_of_sents, numeral / n_of_words, a_pro / nouns, s_pro / n_of_sents]
+    third_level_str = [str(one_syl_end_cc) + ' / ' + w_n_str, str(two_syl_middle_cc) + ' / ' + w_n_str,
+                       str(three_syl_begin_cc) + ' / ' + w_n_str, str(three_syl_middle_cc) + ' / ' + w_n_str,
+                       str(three_syl_end_cc) + ' / ' + w_n_str, str(four_syl_cc_on_the_edge) + ' / ' + w_n_str,
+                       str(five_syl_cv_pattern) + ' / ' + w_n_str, str(adv) + ' / ' + str(verbs),
+                       str(gen) + ' / ' + w_n_str, str(ins) + ' / ' + w_n_str, str(coord_conjs_num) + ' / ' + s_n_str,
+                       str(sent_complic_depend) + ' / ' + s_n_str, str(inverse) + ' / ' + s_n_str,
+                       str(numeral) + ' / ' + w_n_str, str(a_pro) + ' / ' + str(nouns),
+                       str(s_pro) + ' / ' + s_n_str]
+    third_level_W_norm = third_level[:][:10] + third_level[:][13:15]
+    third_level_S_norm = third_level[:][10:13] + [third_level[:][15]]
+    str_third_level_W_norm = third_level_str[:][:10] + third_level_str[:][13:15]
+    str_third_level_S_norm = third_level_str[:][10:13] + [third_level_str[:][15]]
+
     num_of_3rd_class_W.append(third_level_W_norm)
     num_of_3rd_class_S.append(third_level_S_norm)
+    str_of_3rd_class_W.append(str_third_level_W_norm)
+    str_of_3rd_class_S.append(str_third_level_S_norm)
 
     # 7
     fourth_level = [three_syl_3rd_stressed / n_of_words, three_syl_cc_on_the_edge / n_of_words,
                     five_syl_cc_on_the_edge / n_of_words, alt_conjs_num / n_of_sents, rare_obsol / n_of_words,
                     foreign / n_of_words, particip_clause / n_of_sents]
+    fourth_level_str = [str(three_syl_3rd_stressed) + ' / ' + w_n_str, str(three_syl_cc_on_the_edge) + ' / ' + w_n_str,
+                        str(five_syl_cc_on_the_edge) + ' / ' + w_n_str, str(alt_conjs_num) + ' / ' + s_n_str,
+                        str(rare_obsol) + ' / ' + w_n_str, str(foreign) + ' / ' + w_n_str,
+                        str(particip_clause) + ' / ' + s_n_str]
     fourth_level_W_norm = fourth_level[:][:3] + fourth_level[:][4:6]
     fourth_level_S_norm = [fourth_level[:][3]] + [fourth_level[:][6]]
+    str_fourth_level_W_norm = fourth_level_str[:][:3] + fourth_level_str[:][4:6]
+    str_fourth_level_S_norm = [fourth_level_str[:][3]] + [fourth_level_str[:][6]]
+
     num_of_4th_class_W.append(fourth_level_W_norm)
     num_of_4th_class_S.append(fourth_level_S_norm)
+    str_of_4th_class_W.append(str_fourth_level_W_norm)
+    str_of_4th_class_S.append(str_fourth_level_S_norm)
 
 first_level_names = """stressed_first_v c_in_the_end c_in_the_beginning two_syl_open_syls three_syl_open_syls
      one_syl two_syl""".split()
@@ -730,10 +780,18 @@ with open(path_for_pipeline+r'/result.csv', 'w', encoding='utf-8') as writer:
                          ','.join(list(map(str, num_of_4th_class_S[m]))) + ',' + str(avg_chars_lens[m]) +\
                          ',' + str(total_chars_lens[m]) + ',' + str(total_words_nums[m])
 
+        debud_string_to_write = file_names[m] + ',' + texts[m] + ',' + ','.join(list(str_of_1st_class[m])) + ',' +\
+                         ','.join(list(str_of_2nd_class_W[m])) + ',' + ','.join(list(str_of_2nd_class_S[m])) + ',' +\
+                         ','.join(list(str_of_3rd_class_W[m])) + ',' + ','.join(list(str_of_3rd_class_S[m])) + ',' +\
+                         ','.join(list(str_of_4th_class_W[m])) + ',' + ','.join(list(str_of_4th_class_S[m])) + ',' +\
+                                str(avg_chars_lens[m]) + ',' + str(total_chars_lens[m]) + ',' + str(total_words_nums[m])
+
         if m != length:
             writer.write(string_to_write + '\n')
+            writer.write(debud_string_to_write + '\n')
         else:
-            writer.write(string_to_write)
+            writer.write(string_to_write + '\n')
+            writer.write(debud_string_to_write)
 
 header_for_detailed = 'text' + ',' + ','.join(first_level_names) + ',' + ','.join(second_level_W_names) + ',' +\
     ','.join(second_level_S_names) + ',' + ','.join(third_level_W_names) + ',' + ','.join(third_level_S_names) +\
@@ -762,10 +820,15 @@ for j in range(len(texts)):
                    ' <delim> '.join(three_syl_begin_cc_all[j]) + ',' + ' <delim> '.join(three_syl_middle_cc_all[j]) + ',' +
                    ' <delim> '.join(three_syl_end_cc_all[j]) + ',' + ' <delim> '.join(four_syl_cc_on_the_edge_all[j]) + ',' +
                    ' <delim> '.join(five_syl_cv_pattern_all[j]) + ',' + ' <delim> '.join(adv_all[j]) + ',' +
-                   ' <delim> '.join(numeral_all[j]) + ',' + ' <delim> '.join(a_pro_all[j]) + ',' + ' <delim> '.join(gen_all[j]) + ',' +
-                   ' <delim> '.join(ins_all[j]) + ',' + ' <delim> '.join(coord_conjs_num_all[j]) + ',' +
+                   ' <delim> '.join(gen_all[j]) + ',' + ' <delim> '.join(ins_all[j]) + ',' + ' <delim> '.join(numeral_all[j]) + ',' +
+                   ' <delim> '.join(a_pro_all[j]) + ',' + ' <delim> '.join(coord_conjs_num_all[j]) + ',' +
                    ' <delim> '.join(sent_complic_depend_all[j]) + ',' + ' <delim> '.join(inverse_all[j]) + ',' +
                    ' <delim> '.join(s_pro_all[j]) + ',' + ' <delim> '.join(three_syl_3rd_stressed_all[j]) + ',' +
                    ' <delim> '.join(three_syl_cc_on_the_edge_all[j]) + ',' + ' <delim> '.join(five_syl_cc_on_the_edge_all[j]) + ',' +
                    ' <delim> '.join(rare_obsol_all[j]) + ',' + ' <delim> '.join(foreign_all[j]) + ',' +
                    ' <delim> '.join(alt_conjs_num_all[j]) + ',' + ' <delim> '.join(particip_clause_all[j]))
+
+tmp_files = list(os.walk(os.path.dirname(__file__)+'/tmp'))[0][2]
+
+for tmp_file in tmp_files:
+    os.remove(os.path.dirname(__file__)+'/tmp/'+tmp_file)
