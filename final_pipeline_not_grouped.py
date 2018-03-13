@@ -498,13 +498,13 @@ for path in paths:
                 nouns += 1
             elif 'V' in gr:
                 verbs += 1
-                if 'пр' not in gr and 'деепр' not in gr and 'инф' not in gr:
+                if 'прич' not in gr and 'деепр' not in gr and 'инф' not in gr:
                     verbs_pers += 1
                     verbs_pers_all[-1].append(gr[0])
             elif 'ADV' in gr:
                 adv += 1
                 adv_all[-1].append(gr[0])
-            elif 'NUM' in gr:  # 'NUM' could be extraced poorly, might require rethinking
+            elif 'NUM' in gr or 'ANUM' in gr:  # 'NUM' could be extraced poorly, might require rethinking
                 numeral += 1
                 numeral_all[-1].append(gr[0])
             elif 'APRO' in gr:
@@ -741,17 +741,18 @@ second_level_names = """one_syl_cvc one_syl_begin_cc two_syl_begin_cc two_syl_1t
                     three_syl_cv_pattern four_syl_cv_pattern nom acc dat abl
                     sent_simple sent_two_homogen sent_three_homogen no_predic sent_complic_soch
                     verbs_pers parenth""".split()
-second_level_W_names = second_level_names[:][:9]
+second_level_W_names = second_level_names[:][:13]
 second_level_W_names = [string + '_W' for string in second_level_W_names]
-second_level_S_names = second_level_names[:][9:]
+second_level_S_names = second_level_names[:][13:]
 second_level_S_names = [string + '_S' for string in second_level_S_names]
 
 third_level_names = """one_syl_end_cc two_syl_middle_cc three_syl_begin_cc three_syl_middle_cc
                    three_syl_end_cc four_syl_cc_on_the_edge five_syl_cv_pattern adv gen
                    ins coord_conjs_num sent_complic_depend inverse numeral a_pro s_pro""".split()
-third_level_W_names = third_level_names[:][:8] + third_level_names[:][13:15]
+
+third_level_W_names = third_level_names[:][:10] + third_level_names[:][13:15]
 third_level_W_names = [string + '_W' for string in third_level_W_names]
-third_level_S_names = third_level_names[:][8:13] + [third_level_names[:][15]]
+third_level_S_names = third_level_names[:][10:13] + [third_level_names[:][15]]
 third_level_S_names = [string + '_S' for string in third_level_S_names]
 
 fourth_level_names = """three_syl_3rd_stressed three_syl_cc_on_the_edge five_syl_cc_on_the_edge
@@ -780,18 +781,18 @@ with open(path_for_pipeline+r'/result.csv', 'w', encoding='utf-8') as writer:
                          ','.join(list(map(str, num_of_4th_class_S[m]))) + ',' + str(avg_chars_lens[m]) +\
                          ',' + str(total_chars_lens[m]) + ',' + str(total_words_nums[m])
 
-        debud_string_to_write = file_names[m] + ',' + texts[m] + ',' + ','.join(list(str_of_1st_class[m])) + ',' +\
+        debug_string_to_write = file_names[m] + ',' + texts[m] + ',' + ','.join(list(str_of_1st_class[m])) + ',' +\
                          ','.join(list(str_of_2nd_class_W[m])) + ',' + ','.join(list(str_of_2nd_class_S[m])) + ',' +\
                          ','.join(list(str_of_3rd_class_W[m])) + ',' + ','.join(list(str_of_3rd_class_S[m])) + ',' +\
-                         ','.join(list(str_of_4th_class_W[m])) + ',' + ','.join(list(str_of_4th_class_S[m])) + ',' +\
+                         ','.join(list(str_of_4th_class_W[m])) + ',' + ','.join(list(str_of_4th_class_S[m])) + ',' + \
                                 str(avg_chars_lens[m]) + ',' + str(total_chars_lens[m]) + ',' + str(total_words_nums[m])
 
         if m != length:
             writer.write(string_to_write + '\n')
-            writer.write(debud_string_to_write + '\n')
+            writer.write(debug_string_to_write + '\n')
         else:
             writer.write(string_to_write + '\n')
-            writer.write(debud_string_to_write)
+            writer.write(debug_string_to_write)
 
 header_for_detailed = 'text' + ',' + ','.join(first_level_names) + ',' + ','.join(second_level_W_names) + ',' +\
     ','.join(second_level_S_names) + ',' + ','.join(third_level_W_names) + ',' + ','.join(third_level_S_names) +\
