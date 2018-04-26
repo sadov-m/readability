@@ -763,7 +763,7 @@ fourth_level_S_names = [fourth_level_names[:][3]] + [fourth_level_names[:][6]]
 fourth_level_S_names = [string + '_S' for string in fourth_level_S_names]
 
 with open(path_for_pipeline+r'/result.csv', 'w', encoding='utf-8') as writer:
-    writer.write('filename' + ',' + 'text' + ',' + ','.join(first_level_names) + ',' +
+    writer.write('filename' + ',' + ','.join(first_level_names) + ',' +
                  ','.join(second_level_W_names) + ',' + ','.join(second_level_S_names) + ',' +
                  ','.join(third_level_W_names) + ',' + ','.join(third_level_S_names) + ',' +
                  ','.join(fourth_level_W_names) + ',' + ','.join(fourth_level_S_names) + ',' +
@@ -772,7 +772,7 @@ with open(path_for_pipeline+r'/result.csv', 'w', encoding='utf-8') as writer:
     length = len(file_names) - 1
     for m in range(len(file_names)):
 
-        string_to_write = file_names[m] + ',' + texts[m] + ',' + ','.join(list(map(str, num_of_1st_class[m]))) + ',' +\
+        string_to_write = file_names[m] + ',' + ','.join(list(map(str, num_of_1st_class[m]))) + ',' +\
                          ','.join(list(map(str, num_of_2nd_class_W[m]))) + ',' +\
                          ','.join(list(map(str, num_of_2nd_class_S[m]))) + ',' +\
                          ','.join(list(map(str, num_of_3rd_class_W[m]))) + ',' +\
@@ -789,10 +789,11 @@ with open(path_for_pipeline+r'/result.csv', 'w', encoding='utf-8') as writer:
 
         if m != length:
             writer.write(string_to_write + '\n')
-            writer.write(debug_string_to_write + '\n')
+            # writer.write(debug_string_to_write + '\n')
         else:
-            writer.write(string_to_write + '\n')
-            writer.write(debug_string_to_write)
+            writer.write(string_to_write)
+            # writer.write(string_to_write + '\n')
+            # writer.write(debug_string_to_write)
 
 header_for_detailed = 'text' + ',' + ','.join(first_level_names) + ',' + ','.join(second_level_W_names) + ',' +\
     ','.join(second_level_S_names) + ',' + ','.join(third_level_W_names) + ',' + ','.join(third_level_S_names) +\

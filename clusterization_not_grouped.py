@@ -1,35 +1,31 @@
 import pandas as pd
-from sklearn.externals import joblib
 from sklearn.cluster import KMeans
 from sklearn import metrics
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
+import re
+from scipy.spatial.distance import cosine
 
-vizualize = False
-labels = joblib.load('labels_for_tagged_55')
-data = pd.read_csv('resulting_dfs\\for_tagged_december\\result_not_grouped_feats.csv', delimiter='\t')
+vizualize = True
+data = pd.read_csv('dataset\\all_data\\result.csv')
 
-text_name = []
+expert_labels = []
 for elem in data['filename']:
-    text_name.append(int(elem.split('\\')[-1].split('.')[0]))
+    expert_labels.append(re.findall('\d+', elem)[0])
 
-new_labels = [labels[i] for i in text_name]
-"""for i in range(len(labels)):
-    print('text_num', text_name[i], 'label', new_labels[i])
-exit(0)"""
 data = data.drop(labels=['filename'], axis=1)
 
-clusterize = KMeans(n_clusters=4, random_state=42)
+clusterize = KMeans(n_clusters=3, random_state=42)
 output = clusterize.fit_predict(data)
 
 data_res = []
-
+#clusterize.labels_ = [str(label + 1) for label in clusterize.labels_]
 data_res.append(({
-        'ARI': metrics.adjusted_rand_score(new_labels, clusterize.labels_),
-        'AMI': metrics.adjusted_mutual_info_score(new_labels, clusterize.labels_),
-        'Homogenity': metrics.homogeneity_score(new_labels, clusterize.labels_),
-        'Completeness': metrics.completeness_score(new_labels, clusterize.labels_),
-        'V-measure': metrics.v_measure_score(new_labels, clusterize.labels_),
+        'ARI': metrics.adjusted_rand_score(expert_labels, clusterize.labels_),
+        'AMI': metrics.adjusted_mutual_info_score(expert_labels, clusterize.labels_),
+        'Homogenity': metrics.homogeneity_score(expert_labels, clusterize.labels_),
+        'Completeness': metrics.completeness_score(expert_labels, clusterize.labels_),
+        'V-measure': metrics.v_measure_score(expert_labels, clusterize.labels_),
         'Silhouette': metrics.silhouette_score(data, clusterize.labels_)}))
 
 results = pd.DataFrame(data=data_res, columns=['ARI', 'AMI', 'Homogenity',
@@ -37,22 +33,14 @@ results = pd.DataFrame(data=data_res, columns=['ARI', 'AMI', 'Homogenity',
                                            'Silhouette'], index=['K-means'])
 
 print(results)
-data['filename'] = [str(elem) + '.txt' for elem in text_name]
-data['text_label'] = new_labels
-data['cluster'] = clusterize.labels_
-
-data.to_csv('resulting_dfs\\for_tagged_december\\result_begtin_for_analysis.csv')
 
 if vizualize:
     pca = PCA(n_components=2)
     X_top_plot = pca.fit_transform(data)
     plt.figure()
-    clusters = new_labels
-    plt.scatter(X_top_plot[:, 0], X_top_plot[:, 1], c=clusterize.labels_)  # plot all points
+    clusters = clusterize.labels_
+    plt.scatter(X_top_plot[:, 0], X_top_plot[:, 1], c=expert_labels)  # plot all points
     plt.show()
-else:
-    data['filename'] = [str(elem) + '.txt' for elem in text_name]
-    data['text_label'] = new_labels
-    data['cluster'] = clusterize.labels_
 
-    data.to_csv('resulting_dfs\\for_tagged_december\\result_not_grouped_feats_for_analysis.csv')
+data.to_csv('clusterization_result.csv', sep=',',
+            encoding='utf-8')
