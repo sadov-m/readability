@@ -1,11 +1,12 @@
 # readability
-This is the project dedicated to measure readability of texts written in russian.
-Prerequisites:
-* Python 3.x (developed on 3.6.2)
+Measuring [readability](https://en.wikipedia.org/wiki/Readability) for Russian.
+Prerequisites (for full fuctionality):
+* Python 3.x (tested on 3.6.2)
 * libraries
+  * keras
   * numpy
   * requests
-  * tqdm (*not obligatory, but adds some convenience*)
+  * tqdm (*not obligatory, but makes it more convenient*)
  * [ru-syntax](https://github.com/tiefling-cat/ru-syntax) up and running (*check the link to see how to install it and beware: if you are using Windows, it needs some changes in code to make it work; see the issues of the project*)
 
 ## main code
@@ -19,4 +20,6 @@ syllable_segmentation.py - the script that segments words by syllables.
 
 get_tokens_and_sent_segmentation.py - the script that segments a text into sentences and further - sentences to tokens; reworked version of [RusTokenizer](https://github.com/elmiram/RusTokenizer).
 
-final_pipeline.py - the beta-version of our pipeline that analyzes your text collection in terms of their readability features.
+final_pipeline_not_grouped.py - the pipeline that analyzes your text collection in terms of their readability features and transform each text into form of vec.
+
+classifier.py - the script that describes a classificator.
