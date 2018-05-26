@@ -5,6 +5,7 @@ import syllable_segmentation
 from subprocess import call
 import re
 import os
+import numpy as np
 
 path_for_pipeline = input('type in the path to a folder with texts to analyze: ')
 
@@ -88,8 +89,9 @@ rare_obsol_all = []
 foreign_all = []
 particip_clause_all = []
 
-paths = extracting_texts_paths(path_for_pipeline)
+#oov_words_all = []
 
+paths = extracting_texts_paths(path_for_pipeline)
 
 # sets with syntax roles for certain features
 syntax_roles_partcp = ['релят', 'опред', 'оп-опред']
@@ -133,6 +135,24 @@ def open_wordlist(path_to_txt):
 alt_conjs, coord_conjs = open_wordlist(os.path.dirname(__file__)+'/lex_dicts/противительные_союзы.txt'),\
                          open_wordlist(os.path.dirname(__file__)+'/lex_dicts/сочинительные_союзы.txt')
 
+# loading frequency dict by Sharov and Lyashevskaya
+freq_dict_rnc = open_wordlist(os.path.dirname(__file__) + '/freq_rnc/freqrnc2011.csv')[1:-1]  # 1st string - header, last - null
+freq_dict_rnc = [string.split('\t') for string in freq_dict_rnc]
+freq_dict_lemmas = [string[0] for string in freq_dict_rnc]
+freq_dict_freqs = [float(string[2]) for string in freq_dict_rnc]
+freq_dict_Rs = [float(string[3]) for string in freq_dict_rnc]
+freq_dict_Ds = [float(string[4]) for string in freq_dict_rnc]
+freq_dict_Docs = [float(string[5]) for string in freq_dict_rnc]
+min_dict_freq = min(freq_dict_freqs)
+
+# loading top-n word lists
+nouns_top_1000 = open_wordlist(os.path.dirname(__file__) + '/freq_rnc/nouns_top_1000.csv')[1:-1]
+nouns_top_1000 = [string.split(';')[0] for string in nouns_top_1000]
+verbs_top_1000 = open_wordlist(os.path.dirname(__file__) + '/freq_rnc/verbs_top_1000.csv')[1:-1]
+verbs_top_1000 = [string.split(';')[0] for string in verbs_top_1000]
+adjs_top_1000 = open_wordlist(os.path.dirname(__file__) + '/freq_rnc/adjs_top_1000.csv')[1:-1]
+adjs_top_1000 = [string.split(';')[0] for string in adjs_top_1000]
+
 # main loop
 for path in paths:
 
@@ -154,7 +174,6 @@ for path in paths:
     total_chars_len = sum(list_of_words_len)  # also not feature var
     avg_chars_len = total_chars_len/len(list_of_words_len)
 
-    # TO_DO: make it normalized!
     avg_chars_lens.append(avg_chars_len/12.0)
 
     if total_chars_len < 145:
@@ -438,6 +457,32 @@ for path in paths:
     coord_conjs_num = 0  # Сочинительные союзы
     foreign = 0  # Иностранные слова
 
+    W_freqs = []  # Частоты слов в тексте
+    W_Rs = []  # коэф. R слов в тексте
+    W_Ds = []  # коэф. Жуйана слов в тексте
+    W_Docs = []  # Док. частота слов в тексте
+
+    num_of_oov_words = []  # Кол-во слов, не найденных в словаре
+    abstr_nouns = []
+
+    num_of_top_200_nouns = []
+    num_of_top_400_nouns = []
+    num_of_top_600_nouns = []
+    num_of_top_800_nouns = []
+    num_of_top_1000_nouns = []
+
+    num_of_top_200_verbs = []
+    num_of_top_400_verbs = []
+    num_of_top_600_verbs = []
+    num_of_top_800_verbs = []
+    num_of_top_1000_verbs = []
+
+    num_of_top_200_adjs = []
+    num_of_top_400_adjs = []
+    num_of_top_600_adjs = []
+    num_of_top_800_adjs = []
+    num_of_top_1000_adjs = []
+
     parenth_all.append([])
     rare_obsol_all.append([])
     alt_conjs_num_all.append([])
@@ -469,9 +514,13 @@ for path in paths:
     s_pro_all.append([])
     adv_all.append([])
 
+    abstr_suffs = ['ье', 'ие', 'тие', 'ение', 'ание', 'ство', 'ация',
+                   'ость', 'есть', 'изм', 'изна', 'ота', 'ина', 'ика', 'тива']
+
     # counters for normalizing some morph features defined above
     nouns = 0
     verbs = 0
+    adjs = 0
 
     # lex and morph features retrieval
     output_path = path.split('\\')[-1]
@@ -487,6 +536,18 @@ for path in paths:
             # word_gr['analysis']:
             gr = re.findall('\w+', word_gr.split('|')[0])
 
+            if gr[1] in freq_dict_lemmas:
+                W_freqs.append(freq_dict_freqs[freq_dict_lemmas.index(gr[1])])
+                W_Rs.append(freq_dict_Rs[freq_dict_lemmas.index(gr[1])])
+                W_Ds.append(freq_dict_Ds[freq_dict_lemmas.index(gr[1])])
+                W_Docs.append(freq_dict_Docs[freq_dict_lemmas.index(gr[1])])
+            else:
+                W_freqs.append(min_dict_freq**-1)
+                W_Rs.append(1)
+                W_Ds.append(1)
+                W_Docs.append(1)
+                num_of_oov_words.append(gr[1])
+
             if 'редк' in gr or 'устар' in gr or 'гео' in gr:  # words with 'гео' tag are considered to be rare
                 rare_obsol += 1
                 rare_obsol_all[-1].append(gr[0])
@@ -496,11 +557,63 @@ for path in paths:
                 parenth_all[-1].append(gr[0])
             elif 'S' in gr:
                 nouns += 1
+                last_2_chars = gr[1][-2:]
+                last_3_chars = gr[1][-3:]
+                last_4_chars = gr[1][-4:]
+                last_n_chars = [last_2_chars, last_3_chars, last_4_chars]
+
+                for n_chars in last_n_chars:
+                    if n_chars in abstr_suffs:
+                        abstr_nouns.append(gr[1])
+                        break
+
+                if gr[1] in nouns_top_1000:
+                    N_ordinal = nouns_top_1000.index(gr[1])
+                    if N_ordinal < 200:
+                        num_of_top_200_nouns.append(gr[1])
+                    elif N_ordinal < 400:
+                        num_of_top_400_nouns.append(gr[1])
+                    elif N_ordinal < 600:
+                        num_of_top_600_nouns.append(gr[1])
+                    elif N_ordinal < 800:
+                        num_of_top_800_nouns.append(gr[1])
+                    elif N_ordinal < 1000:
+                        num_of_top_1000_nouns.append(gr[1])
+
+
+            elif 'A' in gr:
+                adjs += 1
+                if gr[1] in adjs_top_1000:
+                    A_ordinal = adjs_top_1000.index(gr[1])
+                    if A_ordinal < 200:
+                        num_of_top_200_adjs.append(gr[1])
+                    elif A_ordinal < 400:
+                        num_of_top_400_adjs.append(gr[1])
+                    elif A_ordinal < 600:
+                        num_of_top_600_adjs.append(gr[1])
+                    elif A_ordinal < 800:
+                        num_of_top_800_adjs.append(gr[1])
+                    elif A_ordinal < 1000:
+                        num_of_top_1000_adjs.append(gr[1])
             elif 'V' in gr:
                 verbs += 1
-                if 'прич' not in gr and 'деепр' not in gr and 'инф' not in gr:
-                    verbs_pers += 1
-                    verbs_pers_all[-1].append(gr[0])
+                if 'прич' not in gr and 'деепр' not in gr:
+                    if 'инф' not in gr:
+                        verbs_pers += 1
+                        verbs_pers_all[-1].append(gr[0])
+                    else:
+                        if gr[1] in verbs_top_1000:
+                            V_ordinal = verbs_top_1000.index(gr[1])
+                            if V_ordinal < 200:
+                                num_of_top_200_verbs.append(gr[1])
+                            elif V_ordinal < 400:
+                                num_of_top_400_verbs.append(gr[1])
+                            elif V_ordinal < 600:
+                                num_of_top_600_verbs.append(gr[1])
+                            elif V_ordinal < 800:
+                                num_of_top_800_verbs.append(gr[1])
+                            elif V_ordinal < 1000:
+                                num_of_top_1000_verbs.append(gr[1])
             elif 'ADV' in gr:
                 adv += 1
                 adv_all[-1].append(gr[0])
@@ -523,6 +636,11 @@ for path in paths:
 
         except:
             pass
+
+    avg_W_freq = np.mean(W_freqs)
+    avg_W_Rs = np.mean(W_Rs)
+    avg_W_Ds = np.mean(W_Ds)
+    avg_W_Docs = np.mean(W_Docs)
 
     # ru-syntax
     rusyntax_call_str = r'python C:\Users\Mike\PycharmProjects\ru-syntax\ru-syntax.py {}'.format(path)
@@ -651,10 +769,19 @@ for path in paths:
     w_n_str = str(n_of_words)
     s_n_str = str(n_of_sents)
 
+    if adjs == 0:
+        adjs = 1
+    if nouns == 0:
+        nouns = 1
+    if verbs == 1:
+        verbs = 1
+
     # 7
     first_level = [stressed_first_v / n_of_words, c_in_the_end / n_of_words, c_in_the_beginning / n_of_words,
                    two_syl_open_syls / n_of_words, three_syl_open_syls / n_of_words, one_syl / n_of_words,
                    two_syl / n_of_words]
+    first_level = [round(value, 4) for value in first_level]
+
     first_level_str = [str(stressed_first_v) + ' / ' + w_n_str, str(c_in_the_end) + ' / ' + w_n_str,
                        str(c_in_the_beginning) + ' / ' + w_n_str, str(two_syl_open_syls) + ' / ' + w_n_str,
                        str(three_syl_open_syls) + ' / ' + w_n_str, str(one_syl) + ' / ' + w_n_str,
@@ -670,6 +797,8 @@ for path in paths:
                     acc / n_of_words, dat / n_of_words, abl / n_of_words, sent_simple / n_of_sents,
                     sent_two_homogen / n_of_sents, sent_three_homogen / n_of_sents, no_predic / n_of_sents,
                     sent_complic_soch / n_of_sents, verbs_pers / n_of_sents, parenth / n_of_sents]
+    second_level = [round(value, 4) for value in second_level]
+
     second_level_str = [str(one_syl_cvc) + ' / ' + w_n_str, str(one_syl_begin_cc) + ' / ' + w_n_str,
                         str(two_syl_begin_cc) + ' / ' + w_n_str, str(two_syl_1th_stressed) + ' / ' + w_n_str,
                         str(three_syl_2nd_stressed) + ' / ' + w_n_str, str(two_syl_2nd_stressed) + ' / ' + w_n_str,
@@ -696,6 +825,8 @@ for path in paths:
                    four_syl_cc_on_the_edge / n_of_words, five_syl_cv_pattern / n_of_words, adv / verbs,
                    gen / n_of_words, ins / n_of_words, coord_conjs_num / n_of_sents, sent_complic_depend / n_of_sents,
                    inverse / n_of_sents, numeral / n_of_words, a_pro / nouns, s_pro / n_of_sents]
+    third_level = [round(value, 4) for value in third_level]
+
     third_level_str = [str(one_syl_end_cc) + ' / ' + w_n_str, str(two_syl_middle_cc) + ' / ' + w_n_str,
                        str(three_syl_begin_cc) + ' / ' + w_n_str, str(three_syl_middle_cc) + ' / ' + w_n_str,
                        str(three_syl_end_cc) + ' / ' + w_n_str, str(four_syl_cc_on_the_edge) + ' / ' + w_n_str,
@@ -717,13 +848,31 @@ for path in paths:
     # 7
     fourth_level = [three_syl_3rd_stressed / n_of_words, three_syl_cc_on_the_edge / n_of_words,
                     five_syl_cc_on_the_edge / n_of_words, alt_conjs_num / n_of_sents, rare_obsol / n_of_words,
-                    foreign / n_of_words, particip_clause / n_of_sents]
+                    foreign / n_of_words, particip_clause / n_of_sents, avg_W_freq, avg_W_Rs, avg_W_Ds, avg_W_Docs,
+                    len(num_of_oov_words) / n_of_words, len(num_of_top_200_nouns) / nouns,
+                    (len(num_of_top_200_nouns) + len(num_of_top_400_nouns)) / nouns,
+                    (len(num_of_top_200_nouns) + len(num_of_top_400_nouns) + len(num_of_top_600_nouns)) / nouns,
+                    (len(num_of_top_200_nouns) + len(num_of_top_400_nouns) + len(num_of_top_600_nouns) + len(num_of_top_800_nouns)) / nouns,
+                    (len(num_of_top_200_nouns) + len(num_of_top_400_nouns) + len(num_of_top_600_nouns) +
+                    len(num_of_top_800_nouns) + len(num_of_top_1000_nouns)) / nouns, len(num_of_top_200_verbs) / verbs,
+                    (len(num_of_top_200_verbs) + len(num_of_top_400_verbs)) / verbs,
+                    (len(num_of_top_200_verbs) + len(num_of_top_400_verbs) + len(num_of_top_600_verbs)) / verbs,
+                    (len(num_of_top_200_verbs) + len(num_of_top_400_verbs) + len(num_of_top_600_verbs) + len(num_of_top_800_verbs)) / verbs,
+                    (len(num_of_top_200_verbs) + len(num_of_top_400_verbs) + len(num_of_top_600_verbs) +
+                     len(num_of_top_800_verbs) + len(num_of_top_1000_verbs)) / verbs, len(num_of_top_200_adjs) / adjs,
+                    (len(num_of_top_200_adjs) + len(num_of_top_400_adjs)) / adjs,
+                    (len(num_of_top_200_adjs) + len(num_of_top_400_adjs) + len(num_of_top_600_adjs)) / adjs,
+                    (len(num_of_top_200_adjs) + len(num_of_top_400_adjs) + len(num_of_top_600_adjs) + len(num_of_top_800_adjs)) / adjs,
+                    (len(num_of_top_200_adjs) + len(num_of_top_400_adjs) + len(num_of_top_600_adjs) +
+                     len(num_of_top_800_adjs) + len(num_of_top_1000_adjs)) / adjs, len(abstr_nouns) / nouns]
+    fourth_level = [round(value, 4) for value in fourth_level]
+
     fourth_level_str = [str(three_syl_3rd_stressed) + ' / ' + w_n_str, str(three_syl_cc_on_the_edge) + ' / ' + w_n_str,
                         str(five_syl_cc_on_the_edge) + ' / ' + w_n_str, str(alt_conjs_num) + ' / ' + s_n_str,
                         str(rare_obsol) + ' / ' + w_n_str, str(foreign) + ' / ' + w_n_str,
                         str(particip_clause) + ' / ' + s_n_str]
     fourth_level_W_norm = fourth_level[:][:3] + fourth_level[:][4:6]
-    fourth_level_S_norm = [fourth_level[:][3]] + [fourth_level[:][6]]
+    fourth_level_S_norm = [fourth_level[:][3]] + fourth_level[:][6:]
     str_fourth_level_W_norm = fourth_level_str[:][:3] + fourth_level_str[:][4:6]
     str_fourth_level_S_norm = [fourth_level_str[:][3]] + [fourth_level_str[:][6]]
 
@@ -756,10 +905,14 @@ third_level_S_names = third_level_names[:][10:13] + [third_level_names[:][15]]
 third_level_S_names = [string + '_S' for string in third_level_S_names]
 
 fourth_level_names = """three_syl_3rd_stressed three_syl_cc_on_the_edge five_syl_cc_on_the_edge
-                    alt_conjs_num rare_obsol foreign particip_clause""".split()
+                    alt_conjs_num rare_obsol foreign particip_clause avg_W_freq avg_W_Rs avg_W_Ds
+                    avg_W_Docs oov_words_rate N_top_200_rate N_top_400_rate N_top_600_rate N_top_800_rate
+                    N_top_1000_rate V_top_200_rate V_top_400_rate V_top_600_rate V_top_800_rate
+                    V_top_1000_rate A_top_200_rate A_top_400_rate A_top_600_rate A_top_800_rate
+                    A_top_1000_rate abstr_nouns_rate""".split()
 fourth_level_W_names = fourth_level_names[:][:3] + fourth_level_names[:][4:6]
 fourth_level_W_names = [string + '_W' for string in fourth_level_W_names]
-fourth_level_S_names = [fourth_level_names[:][3]] + [fourth_level_names[:][6]]
+fourth_level_S_names = [fourth_level_names[:][3]] + fourth_level_names[:][6:]
 fourth_level_S_names = [string + '_S' for string in fourth_level_S_names]
 
 with open(path_for_pipeline+r'/result.csv', 'w', encoding='utf-8') as writer:
