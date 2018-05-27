@@ -174,25 +174,9 @@ for path in paths:
     total_chars_len = sum(list_of_words_len)  # also not feature var
     avg_chars_len = total_chars_len/len(list_of_words_len)
 
-    avg_chars_lens.append(avg_chars_len/12.0)
-
-    if total_chars_len < 145:
-        total_chars_lens.append(0.25)
-    elif total_chars_len < 750:
-        total_chars_lens.append(0.5)
-    elif total_chars_len < 1330:
-        total_chars_lens.append(0.75)
-    else:
-        total_chars_lens.append(1.0)
-
-    if n_of_words < 30:
-        total_words_nums.append(0.25)
-    elif n_of_words < 75:
-        total_words_nums.append(0.5)
-    elif n_of_words < 95:
-        total_words_nums.append(0.75)
-    else:
-        total_words_nums.append(1.0)
+    avg_chars_lens.append(avg_chars_len)
+    total_chars_lens.append(total_chars_len)
+    total_words_nums.append(n_of_words)
 
     # print('num of sentences:', number_of_sents, 'num of words:', number_of_words, 'total chars:', total_chars_len)
 
@@ -463,8 +447,9 @@ for path in paths:
     W_Docs = []  # Док. частота слов в тексте
 
     num_of_oov_words = []  # Кол-во слов, не найденных в словаре
-    abstr_nouns = []
+    abstr_nouns = []  # Кол-во абстрактных существительных
 
+    # Списки топ-n частотных слов по частям речи
     num_of_top_200_nouns = []
     num_of_top_400_nouns = []
     num_of_top_600_nouns = []
@@ -514,8 +499,8 @@ for path in paths:
     s_pro_all.append([])
     adv_all.append([])
 
-    abstr_suffs = ['ье', 'ие', 'тие', 'ение', 'ание', 'ство', 'ация',
-                   'ость', 'есть', 'изм', 'изна', 'ота', 'ина', 'ика', 'тива']
+    abstr_endings = ['тье', 'ьё', 'ние', 'вие', 'ство', 'ация', 'ость', 'есть',
+                   'изм', 'изна', 'ота', 'тика', 'тива']
 
     # counters for normalizing some morph features defined above
     nouns = 0
@@ -541,7 +526,7 @@ for path in paths:
                 W_Rs.append(freq_dict_Rs[freq_dict_lemmas.index(gr[1])])
                 W_Ds.append(freq_dict_Ds[freq_dict_lemmas.index(gr[1])])
                 W_Docs.append(freq_dict_Docs[freq_dict_lemmas.index(gr[1])])
-            else:
+            else:  # если слово не было найдено в частот. словаре
                 W_freqs.append(min_dict_freq**-1)
                 W_Rs.append(1)
                 W_Ds.append(1)
@@ -563,7 +548,7 @@ for path in paths:
                 last_n_chars = [last_2_chars, last_3_chars, last_4_chars]
 
                 for n_chars in last_n_chars:
-                    if n_chars in abstr_suffs:
+                    if n_chars in abstr_endings:
                         abstr_nouns.append(gr[1])
                         break
 
@@ -698,7 +683,7 @@ for path in paths:
             if 'nom' in elem[5]:
                 nom += 1
                 nom_all[-1].append(elem[1])
-            elif 'gen' in elem[5]:
+            elif 'gen' in elem[5] or 'part' in elem[5]:
                 gen += 1
                 gen_all[-1].append(elem[1])
             elif 'acc' in elem[5]:
@@ -710,7 +695,7 @@ for path in paths:
             elif 'ins' in elem[5]:
                 ins += 1
                 ins_all[-1].append(elem[1])
-            elif 'abl' in elem[5]:
+            elif 'abl' in elem[5] or 'loc' in elem[5]:
                 abl += 1
                 abl_all[-1].append(elem[1])
 
@@ -796,7 +781,7 @@ for path in paths:
                     three_syl_cv_pattern / n_of_words, four_syl_cv_pattern / n_of_words, nom / n_of_words,
                     acc / n_of_words, dat / n_of_words, abl / n_of_words, sent_simple / n_of_sents,
                     sent_two_homogen / n_of_sents, sent_three_homogen / n_of_sents, no_predic / n_of_sents,
-                    sent_complic_soch / n_of_sents, verbs_pers / n_of_sents, parenth / n_of_sents]
+                    sent_complic_soch / n_of_sents, verbs_pers / verbs, parenth / n_of_sents]
     second_level = [round(value, 4) for value in second_level]
 
     second_level_str = [str(one_syl_cvc) + ' / ' + w_n_str, str(one_syl_begin_cc) + ' / ' + w_n_str,
@@ -807,12 +792,12 @@ for path in paths:
                         str(acc) + ' / ' + w_n_str, str(dat) + ' / ' + w_n_str, str(abl) + ' / ' + w_n_str,
                         str(sent_simple) + ' / ' + s_n_str, str(sent_two_homogen) + ' / ' + s_n_str,
                         str(sent_three_homogen) + ' / ' + s_n_str, str(no_predic) + ' / ' + s_n_str,
-                        str(sent_complic_soch) + ' / ' + s_n_str, str(verbs_pers) + ' / ' + s_n_str,
+                        str(sent_complic_soch) + ' / ' + s_n_str, str(verbs_pers) + ' / ' + str(verbs),
                         str(parenth) + ' / ' + s_n_str]
-    second_level_W_norm = second_level[:][:13]
-    second_level_S_norm = second_level[:][13:]
-    str_second_level_W_norm = second_level_str[:][:13]
-    str_second_level_S_norm = second_level_str[:][13:]
+    second_level_W_norm = second_level[:][:13] + [second_level[:][18]]
+    second_level_S_norm = second_level[:][13:18] + [second_level[:][19]]
+    str_second_level_W_norm = second_level_str[:][:13] + [second_level_str[:][18]]
+    str_second_level_S_norm = second_level_str[:][13:] + [second_level_str[:][19]]
 
     num_of_2nd_class_W.append(second_level_W_norm)
     num_of_2nd_class_S.append(second_level_S_norm)
@@ -824,7 +809,7 @@ for path in paths:
                    three_syl_middle_cc / n_of_words, three_syl_end_cc / n_of_words,
                    four_syl_cc_on_the_edge / n_of_words, five_syl_cv_pattern / n_of_words, adv / verbs,
                    gen / n_of_words, ins / n_of_words, coord_conjs_num / n_of_sents, sent_complic_depend / n_of_sents,
-                   inverse / n_of_sents, numeral / n_of_words, a_pro / nouns, s_pro / n_of_sents]
+                   inverse / n_of_sents, numeral / n_of_words, a_pro / adjs, s_pro / nouns]
     third_level = [round(value, 4) for value in third_level]
 
     third_level_str = [str(one_syl_end_cc) + ' / ' + w_n_str, str(two_syl_middle_cc) + ' / ' + w_n_str,
@@ -833,19 +818,19 @@ for path in paths:
                        str(five_syl_cv_pattern) + ' / ' + w_n_str, str(adv) + ' / ' + str(verbs),
                        str(gen) + ' / ' + w_n_str, str(ins) + ' / ' + w_n_str, str(coord_conjs_num) + ' / ' + s_n_str,
                        str(sent_complic_depend) + ' / ' + s_n_str, str(inverse) + ' / ' + s_n_str,
-                       str(numeral) + ' / ' + w_n_str, str(a_pro) + ' / ' + str(nouns),
-                       str(s_pro) + ' / ' + s_n_str]
-    third_level_W_norm = third_level[:][:10] + third_level[:][13:15]
-    third_level_S_norm = third_level[:][10:13] + [third_level[:][15]]
-    str_third_level_W_norm = third_level_str[:][:10] + third_level_str[:][13:15]
-    str_third_level_S_norm = third_level_str[:][10:13] + [third_level_str[:][15]]
+                       str(numeral) + ' / ' + w_n_str, str(a_pro) + ' / ' + str(adjs),
+                       str(s_pro) + ' / ' + str(nouns)]
+    third_level_W_norm = third_level[:][:10] + third_level[:][13:]
+    third_level_S_norm = third_level[:][10:13]
+    str_third_level_W_norm = third_level_str[:][:10] + third_level_str[:][13:]
+    str_third_level_S_norm = third_level_str[:][10:13]
 
     num_of_3rd_class_W.append(third_level_W_norm)
     num_of_3rd_class_S.append(third_level_S_norm)
     str_of_3rd_class_W.append(str_third_level_W_norm)
     str_of_3rd_class_S.append(str_third_level_S_norm)
 
-    # 7
+    # ?
     fourth_level = [three_syl_3rd_stressed / n_of_words, three_syl_cc_on_the_edge / n_of_words,
                     five_syl_cc_on_the_edge / n_of_words, alt_conjs_num / n_of_sents, rare_obsol / n_of_words,
                     foreign / n_of_words, particip_clause / n_of_sents, avg_W_freq, avg_W_Rs, avg_W_Ds, avg_W_Docs,
@@ -874,7 +859,7 @@ for path in paths:
     fourth_level_W_norm = fourth_level[:][:3] + fourth_level[:][4:6]
     fourth_level_S_norm = [fourth_level[:][3]] + fourth_level[:][6:]
     str_fourth_level_W_norm = fourth_level_str[:][:3] + fourth_level_str[:][4:6]
-    str_fourth_level_S_norm = [fourth_level_str[:][3]] + [fourth_level_str[:][6]]
+    str_fourth_level_S_norm = [fourth_level_str[:][3]] + fourth_level_str[:][6:]
 
     num_of_4th_class_W.append(fourth_level_W_norm)
     num_of_4th_class_S.append(fourth_level_S_norm)
