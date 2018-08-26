@@ -6,9 +6,11 @@ from subprocess import call
 import re
 import os
 import numpy as np
+from sklearn.externals import joblib
 
 path_for_pipeline = input('type in the path to a folder with texts to analyze: ')
 
+# declaration of all the vars for the output
 file_names = []
 texts = []
 
@@ -31,10 +33,11 @@ str_of_4th_class_W = []
 str_of_4th_class_S = []
 
 avg_chars_lens = []
+sentences_qty = []
 total_chars_lens = []
 total_words_nums = []
 
-# lists for all the features that were extracted acc to category
+# lists for all the features that were extracted according to category
 stressed_first_v_all = []
 c_in_the_end_all = []
 c_in_the_beginning_all = []
@@ -89,8 +92,6 @@ rare_obsol_all = []
 foreign_all = []
 particip_clause_all = []
 
-#oov_words_all = []
-
 paths = extracting_texts_paths(path_for_pipeline)
 
 # sets with syntax roles for certain features
@@ -122,7 +123,7 @@ def get_accent_syl_id(accentuated_char_id, list_of_syls_lengths):
                 return k
 
 
-# a func to open txt's
+# a func to open txt wordlists
 def open_wordlist(path_to_txt):
 
     with open(path_to_txt, encoding='utf-8') as list_opener:
@@ -162,8 +163,9 @@ for path in paths:
 
     # sentense splitting + tokenization
     tokenizer = get_tokens_and_sent_segmentation.Text(fname=r'', text_in_string=text, path_input=False)
-    texts.append(text.replace(',', ' <comma> '))
+    texts.append(text.replace(',', ' <comma> ').replace('\n', '\t'))
     tokenizer.process()
+
     # removing all the punctuation from tokens so as to count number of words in text
     tokenized_sents = [[token for token in sent if token.isalnum()] for sent in tokenizer.get_sentence_segmentation()]
 
@@ -177,6 +179,7 @@ for path in paths:
     avg_chars_lens.append(avg_chars_len)
     total_chars_lens.append(total_chars_len)
     total_words_nums.append(n_of_words)
+    sentences_qty.append(n_of_sents)
 
     # print('num of sentences:', number_of_sents, 'num of words:', number_of_words, 'total chars:', total_chars_len)
 
@@ -186,7 +189,6 @@ for path in paths:
     words_only = []
 
     for line in accentuated:
-        # print(line)
         line_clean = line.replace('_', '').split()
 
         for word in line_clean:
@@ -900,73 +902,97 @@ fourth_level_W_names = [string + '_W' for string in fourth_level_W_names]
 fourth_level_S_names = [fourth_level_names[:][3]] + fourth_level_names[:][6:]
 fourth_level_S_names = [string + '_S' for string in fourth_level_S_names]
 
-with open(path_for_pipeline+r'/result.csv', 'w', encoding='utf-8') as writer:
-    writer.write('filename' + ',' + ','.join(first_level_names) + ',' +
-                 ','.join(second_level_W_names) + ',' + ','.join(second_level_S_names) + ',' +
-                 ','.join(third_level_W_names) + ',' + ','.join(third_level_S_names) + ',' +
-                 ','.join(fourth_level_W_names) + ',' + ','.join(fourth_level_S_names) + ',' +
-                 'avg_len_in_chars' + ',' + 'len_in_chars' + ',' + 'len_in_words' + '\n')
+save_output = False
+if save_output:
+    with open(path_for_pipeline+r'/result.csv', 'w', encoding='utf-8') as writer:
+        writer.write('filename' + ',' + ','.join(first_level_names) + ',' +
+                     ','.join(second_level_W_names) + ',' + ','.join(second_level_S_names) + ',' +
+                     ','.join(third_level_W_names) + ',' + ','.join(third_level_S_names) + ',' +
+                     ','.join(fourth_level_W_names) + ',' + ','.join(fourth_level_S_names) + ',' +
+                     'avg_len_in_chars' + ',' + 'len_in_chars' + ',' + 'len_in_words' + '\n')
 
-    length = len(file_names) - 1
+        length = len(file_names) - 1
+        for m in range(len(file_names)):
+
+            string_to_write = file_names[m] + ',' + ','.join(list(map(str, num_of_1st_class[m]))) + ',' +\
+                             ','.join(list(map(str, num_of_2nd_class_W[m]))) + ',' +\
+                             ','.join(list(map(str, num_of_2nd_class_S[m]))) + ',' +\
+                             ','.join(list(map(str, num_of_3rd_class_W[m]))) + ',' +\
+                             ','.join(list(map(str, num_of_3rd_class_S[m]))) + ',' +\
+                             ','.join(list(map(str, num_of_4th_class_W[m]))) + ',' +\
+                             ','.join(list(map(str, num_of_4th_class_S[m]))) + ',' + str(avg_chars_lens[m]) +\
+                             ',' + str(total_chars_lens[m]) + ',' + str(total_words_nums[m])
+
+            debug_string_to_write = file_names[m] + ',' + texts[m] + ',' + ','.join(list(str_of_1st_class[m])) + ',' +\
+                             ','.join(list(str_of_2nd_class_W[m])) + ',' + ','.join(list(str_of_2nd_class_S[m])) + ',' +\
+                             ','.join(list(str_of_3rd_class_W[m])) + ',' + ','.join(list(str_of_3rd_class_S[m])) + ',' +\
+                             ','.join(list(str_of_4th_class_W[m])) + ',' + ','.join(list(str_of_4th_class_S[m])) + ',' + \
+                                    str(avg_chars_lens[m]) + ',' + str(total_chars_lens[m]) + ',' + str(total_words_nums[m])
+
+            if m != length:
+                writer.write(string_to_write + '\n')
+                # writer.write(debug_string_to_write + '\n')
+            else:
+                writer.write(string_to_write)
+                # writer.write(string_to_write + '\n')
+                # writer.write(debug_string_to_write)
+
+    header_for_detailed = 'text' + ',' + ','.join(first_level_names) + ',' + ','.join(second_level_W_names) + ',' +\
+        ','.join(second_level_S_names) + ',' + ','.join(third_level_W_names) + ',' + ','.join(third_level_S_names) +\
+        ',' + ','.join(fourth_level_W_names) + ',' + ','.join(fourth_level_S_names[0:2]) + '\n'
+
+    os.mkdir(os.path.join(path_for_pipeline, 'detailed_report'))
+
+    for j in range(len(texts)):
+        report_filename = '_'.join(re.findall('\w+', file_names[j])[-3:])
+        with open(path_for_pipeline+r'/detailed_report/{}.csv'.format(report_filename), 'w', encoding='utf-8') as file:
+            file.write(header_for_detailed)
+            file.write(texts[j] + ',' + ' <delim> '.join(stressed_first_v_all[j]) + ',' + ' <delim> '.join(c_in_the_end_all[j]) + ',' +
+                       ' <delim> '.join(c_in_the_beginning_all[j]) + ',' + ' <delim> '.join(two_syl_open_syls_all[j]) + ',' +
+                       ' <delim> '.join(three_syl_open_syls_all[j]) + ',' + ' <delim> '.join(one_syl_all[j]) + ',' +
+                       ' <delim> '.join(two_syl_all[j]) + ',' + ' <delim> '.join(one_syl_cvc_all[j]) + ',' +
+                       ' <delim> '.join(one_syl_begin_cc_all[j]) + ',' + ' <delim> '.join(two_syl_begin_cc_all[j]) + ',' +
+                       ' <delim> '.join(two_syl_1th_stressed_all[j]) + ',' + ' <delim> '.join(three_syl_2nd_stressed_all[j]) + ',' +
+                       ' <delim> '.join(two_syl_2nd_stressed_all[j]) + ',' + ' <delim> '.join(three_syl_1th_stressed_all[j]) + ',' +
+                       ' <delim> '.join(three_syl_cv_pattern_all[j]) + ',' + ' <delim> '.join(four_syl_cv_pattern_all[j]) + ',' +
+                       ' <delim> '.join(nom_all[j]) + ',' + ' <delim> '.join(acc_all[j]) + ',' + ' <delim> '.join(dat_all[j]) + ',' +
+                       ' <delim> '.join(abl_all[j]) + ',' + ' <delim> '.join(sent_simple_all[j]) + ',' +
+                       ' <delim> '.join(sent_two_homogen_all[j]) + ',' + ' <delim> '.join(sent_three_homogen_all[j]) + ',' +
+                       ' <delim> '.join(no_predic_all[j]) + ',' + ' <delim> '.join(sent_complic_soch_all[j]) + ',' +
+                       ' <delim> '.join(verbs_pers_all[j]) + ',' + ' <delim> '.join(parenth_all[j]) + ',' +
+                       ' <delim> '.join(one_syl_end_cc_all[j]) + ',' + ' <delim> '.join(two_syl_middle_cc_all[j]) + ',' +
+                       ' <delim> '.join(three_syl_begin_cc_all[j]) + ',' + ' <delim> '.join(three_syl_middle_cc_all[j]) + ',' +
+                       ' <delim> '.join(three_syl_end_cc_all[j]) + ',' + ' <delim> '.join(four_syl_cc_on_the_edge_all[j]) + ',' +
+                       ' <delim> '.join(five_syl_cv_pattern_all[j]) + ',' + ' <delim> '.join(adv_all[j]) + ',' +
+                       ' <delim> '.join(gen_all[j]) + ',' + ' <delim> '.join(ins_all[j]) + ',' + ' <delim> '.join(numeral_all[j]) + ',' +
+                       ' <delim> '.join(a_pro_all[j]) + ',' + ' <delim> '.join(coord_conjs_num_all[j]) + ',' +
+                       ' <delim> '.join(sent_complic_depend_all[j]) + ',' + ' <delim> '.join(inverse_all[j]) + ',' +
+                       ' <delim> '.join(s_pro_all[j]) + ',' + ' <delim> '.join(three_syl_3rd_stressed_all[j]) + ',' +
+                       ' <delim> '.join(three_syl_cc_on_the_edge_all[j]) + ',' + ' <delim> '.join(five_syl_cc_on_the_edge_all[j]) + ',' +
+                       ' <delim> '.join(rare_obsol_all[j]) + ',' + ' <delim> '.join(foreign_all[j]) + ',' +
+                       ' <delim> '.join(alt_conjs_num_all[j]) + ',' + ' <delim> '.join(particip_clause_all[j]))
+
+classify = True
+
+
+def classify_texts():
+    model = joblib.load('trained_model')
+    classification_results = []
+
     for m in range(len(file_names)):
-
-        string_to_write = file_names[m] + ',' + ','.join(list(map(str, num_of_1st_class[m]))) + ',' +\
-                         ','.join(list(map(str, num_of_2nd_class_W[m]))) + ',' +\
-                         ','.join(list(map(str, num_of_2nd_class_S[m]))) + ',' +\
-                         ','.join(list(map(str, num_of_3rd_class_W[m]))) + ',' +\
-                         ','.join(list(map(str, num_of_3rd_class_S[m]))) + ',' +\
-                         ','.join(list(map(str, num_of_4th_class_W[m]))) + ',' +\
-                         ','.join(list(map(str, num_of_4th_class_S[m]))) + ',' + str(avg_chars_lens[m]) +\
-                         ',' + str(total_chars_lens[m]) + ',' + str(total_words_nums[m])
-
-        debug_string_to_write = file_names[m] + ',' + texts[m] + ',' + ','.join(list(str_of_1st_class[m])) + ',' +\
-                         ','.join(list(str_of_2nd_class_W[m])) + ',' + ','.join(list(str_of_2nd_class_S[m])) + ',' +\
-                         ','.join(list(str_of_3rd_class_W[m])) + ',' + ','.join(list(str_of_3rd_class_S[m])) + ',' +\
-                         ','.join(list(str_of_4th_class_W[m])) + ',' + ','.join(list(str_of_4th_class_S[m])) + ',' + \
-                                str(avg_chars_lens[m]) + ',' + str(total_chars_lens[m]) + ',' + str(total_words_nums[m])
-
-        if m != length:
-            writer.write(string_to_write + '\n')
-            # writer.write(debug_string_to_write + '\n')
+        if sentences_qty[m] <= 3:
+            classification_results.append(1)
         else:
-            writer.write(string_to_write)
-            # writer.write(string_to_write + '\n')
-            # writer.write(debug_string_to_write)
+            text_vec = [num_of_1st_class[m] + num_of_2nd_class_W[m] + num_of_2nd_class_S[m] + num_of_3rd_class_W[m] +
+                        num_of_3rd_class_S[m] + num_of_4th_class_W[m][:][0:4] + num_of_4th_class_S[m] +
+                        [avg_chars_lens[m]]]
+            classification_results.append(model.predict(text_vec)[0])
 
-header_for_detailed = 'text' + ',' + ','.join(first_level_names) + ',' + ','.join(second_level_W_names) + ',' +\
-    ','.join(second_level_S_names) + ',' + ','.join(third_level_W_names) + ',' + ','.join(third_level_S_names) +\
-    ',' + ','.join(fourth_level_W_names) + ',' + ','.join(fourth_level_S_names) + '\n'
+    return classification_results
 
-os.mkdir(os.path.join(path_for_pipeline, 'detailed_report'))
 
-for j in range(len(texts)):
-    report_filename = '_'.join(re.findall('\w+', file_names[j])[-3:])
-    with open(path_for_pipeline+r'/detailed_report/{}.csv'.format(report_filename), 'w', encoding='utf-8') as file:
-        file.write(header_for_detailed)
-        file.write(texts[j] + ',' + ' <delim> '.join(stressed_first_v_all[j]) + ',' + ' <delim> '.join(c_in_the_end_all[j]) + ',' +
-                   ' <delim> '.join(c_in_the_beginning_all[j]) + ',' + ' <delim> '.join(two_syl_open_syls_all[j]) + ',' +
-                   ' <delim> '.join(three_syl_open_syls_all[j]) + ',' + ' <delim> '.join(one_syl_all[j]) + ',' +
-                   ' <delim> '.join(two_syl_all[j]) + ',' + ' <delim> '.join(one_syl_cvc_all[j]) + ',' +
-                   ' <delim> '.join(one_syl_begin_cc_all[j]) + ',' + ' <delim> '.join(two_syl_begin_cc_all[j]) + ',' +
-                   ' <delim> '.join(two_syl_1th_stressed_all[j]) + ',' + ' <delim> '.join(three_syl_2nd_stressed_all[j]) + ',' +
-                   ' <delim> '.join(two_syl_2nd_stressed_all[j]) + ',' + ' <delim> '.join(three_syl_1th_stressed_all[j]) + ',' +
-                   ' <delim> '.join(three_syl_cv_pattern_all[j]) + ',' + ' <delim> '.join(four_syl_cv_pattern_all[j]) + ',' +
-                   ' <delim> '.join(nom_all[j]) + ',' + ' <delim> '.join(acc_all[j]) + ',' + ' <delim> '.join(dat_all[j]) + ',' +
-                   ' <delim> '.join(abl_all[j]) + ',' + ' <delim> '.join(sent_simple_all[j]) + ',' +
-                   ' <delim> '.join(sent_two_homogen_all[j]) + ',' + ' <delim> '.join(sent_three_homogen_all[j]) + ',' +
-                   ' <delim> '.join(no_predic_all[j]) + ',' + ' <delim> '.join(sent_complic_soch_all[j]) + ',' +
-                   ' <delim> '.join(verbs_pers_all[j]) + ',' + ' <delim> '.join(parenth_all[j]) + ',' +
-                   ' <delim> '.join(one_syl_end_cc_all[j]) + ',' + ' <delim> '.join(two_syl_middle_cc_all[j]) + ',' +
-                   ' <delim> '.join(three_syl_begin_cc_all[j]) + ',' + ' <delim> '.join(three_syl_middle_cc_all[j]) + ',' +
-                   ' <delim> '.join(three_syl_end_cc_all[j]) + ',' + ' <delim> '.join(four_syl_cc_on_the_edge_all[j]) + ',' +
-                   ' <delim> '.join(five_syl_cv_pattern_all[j]) + ',' + ' <delim> '.join(adv_all[j]) + ',' +
-                   ' <delim> '.join(gen_all[j]) + ',' + ' <delim> '.join(ins_all[j]) + ',' + ' <delim> '.join(numeral_all[j]) + ',' +
-                   ' <delim> '.join(a_pro_all[j]) + ',' + ' <delim> '.join(coord_conjs_num_all[j]) + ',' +
-                   ' <delim> '.join(sent_complic_depend_all[j]) + ',' + ' <delim> '.join(inverse_all[j]) + ',' +
-                   ' <delim> '.join(s_pro_all[j]) + ',' + ' <delim> '.join(three_syl_3rd_stressed_all[j]) + ',' +
-                   ' <delim> '.join(three_syl_cc_on_the_edge_all[j]) + ',' + ' <delim> '.join(five_syl_cc_on_the_edge_all[j]) + ',' +
-                   ' <delim> '.join(rare_obsol_all[j]) + ',' + ' <delim> '.join(foreign_all[j]) + ',' +
-                   ' <delim> '.join(alt_conjs_num_all[j]) + ',' + ' <delim> '.join(particip_clause_all[j]))
+classification_output = classify_texts()
+print(classification_output)
 
 tmp_files = list(os.walk(os.path.dirname(__file__)+'/tmp'))[0][2]
 

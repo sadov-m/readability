@@ -413,5 +413,3 @@ class Corpus:
                 t.write_out(fname_tokenized)
         return totalWords
 
-
-# to get the segmentation
