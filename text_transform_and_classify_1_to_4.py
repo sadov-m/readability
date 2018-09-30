@@ -137,7 +137,8 @@ alt_conjs, coord_conjs = open_wordlist(os.path.dirname(__file__)+'/lex_dicts/п�
                          open_wordlist(os.path.dirname(__file__)+'/lex_dicts/сочинительные_союзы.txt')
 
 # loading frequency dict by Sharov and Lyashevskaya
-freq_dict_rnc = open_wordlist(os.path.dirname(__file__) + '/freq_rnc/freqrnc2011.csv')[1:-1]  # 1st string - header, last - null
+# 1st string - header, last - null
+freq_dict_rnc = open_wordlist(os.path.dirname(__file__) + '/freq_rnc/freqrnc2011.csv')[1:-1]
 freq_dict_rnc = [string.split('\t') for string in freq_dict_rnc]
 freq_dict_lemmas = [string[0] for string in freq_dict_rnc]
 freq_dict_freqs = [float(string[2]) for string in freq_dict_rnc]
@@ -501,8 +502,7 @@ for path in paths:
     s_pro_all.append([])
     adv_all.append([])
 
-    abstr_endings = ['тье', 'ьё', 'ние', 'вие', 'ство', 'ация', 'ость', 'есть',
-                   'изм', 'изна', 'ота', 'тика', 'тива']
+    abstr_endings = ['тье', 'ьё', 'ние', 'вие', 'ство', 'ация', 'ость', 'есть', 'изм', 'изна', 'ота', 'тика', 'тива']
 
     # counters for normalizing some morph features defined above
     nouns = 0
@@ -566,7 +566,6 @@ for path in paths:
                         num_of_top_800_nouns.append(gr[1])
                     elif N_ordinal < 1000:
                         num_of_top_1000_nouns.append(gr[1])
-
 
             elif 'A' in gr:
                 adjs += 1
@@ -711,8 +710,6 @@ for path in paths:
                 pass
             else:
                 simple_syntax = False
-
-            #прямая речь???
 
             if elem[7] in ['сент-соч', 'соч-союзн']:
                 if sent_complic_soch_all[-1][-1] != sent_in_str:
