@@ -16,12 +16,16 @@ def classify_5_to_7(paths_list):
             metrics = IB_metrics_readability.calc_readability_metrics(text)
             avg = np.mean([metrics['FK'], metrics['CL'], metrics['DC'], metrics['SMOG'], metrics['ARI']])
 
-            if avg < 3:
+            if avg < 2:
+                results.append(4)  # too easy for such pupils to read
+            elif 2 <= avg < 4:
                 results.append(5)
-            elif 3 <= avg < 7:
+            elif 4 <= avg < 7:
                 results.append(6)
-            elif avg >= 7:
+            elif 7 <= avg < 9:
                 results.append(7)
+            else:
+                results.append(8)  # too hard for such pupils to read
     return results
 
 

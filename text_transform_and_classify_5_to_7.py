@@ -55,9 +55,9 @@ sentences_qty = []
 regexp_abbr_finder = re.compile(r"\b(?:[A-ZА-Я][a-zа-я-]*){2,}")
 regexp_latin_words_finder = re.compile(r"[A-Za-z]+-*[A-Za-z]*")
 regexp_latin_nums_finder = re.compile(r"[IVXLCDM]+")
-regexp_tough_number_finder = re.compile(r"[0-9]+[.,]*[0-9]*")
+regexp_tough_number_finder = re.compile(r"[0-9]+[.,\/]{1}[0-9]+|[0-9]{5,}")
 regexp_qty_marker_finder = re.compile(r"[А-Яа-яA-Za-z]+[\.\/][А-Яа-яA-Za-z]+")
-regexp_punct_finder = re.compile(r"[^a-zA-Zа-яА-Я0-9\s]")
+regexp_punct_finder = re.compile(r"[^a-zA-Zа-яёА-ЯЁ0-9\s]")
 
 sent_two_homogen_all = []
 sent_three_homogen_all = []
@@ -95,10 +95,12 @@ for path in paths:
         for elem in punctuation:
             if elem in set('.,?!-…:;—'):
                 punct_score += 1
-            elif elem in set('()\"\"'):
+            elif elem in set('()\"\"\\\/«»'):
                 punct_score += 2
             elif elem in set('&<>@*#§ˆ¦ǀǁ©®™¤€$¢¥£•№°πƒ∫øØ∏∑√∞⊥∴≈≠≡=≤≥∧∨ʘ±+~'):
                 punct_score += 5
+            else:
+                punct_score += 2.5
 
         # removing all the punctuation from tokens so as to count number of words in text
         tokenized_sents = [[token for token in sent if token.isalnum()] for sent in
@@ -194,7 +196,7 @@ for path in paths:
                 if 'редк' in gr or 'затр' in gr or 'устар' in gr or 'обсц' in gr or 'искаж' in gr:
                     rare_obsol.append(gr[1])
 
-                if 'вводн' in gr:
+                if 'вводн' in gr and gr[1] != 'хорошо':
                     parenth.append(gr[0])
 
                 if 'гео' in gr or 'имя' in gr or 'фам' in gr or 'отч' in gr:
@@ -216,8 +218,11 @@ for path in paths:
                         N_ordinal = nouns_top_1000.index(gr[1])
                         if N_ordinal < 200:
                             num_of_top_200_nouns.append(gr[1])
+                            num_of_top_500_nouns.append(gr[1])
+                            num_of_top_1000_nouns.append(gr[1])
                         elif N_ordinal < 500:
                             num_of_top_500_nouns.append(gr[1])
+                            num_of_top_1000_nouns.append(gr[1])
                         elif N_ordinal < 1000:
                             num_of_top_1000_nouns.append(gr[1])
 
@@ -227,8 +232,11 @@ for path in paths:
                         A_ordinal = adjs_top_1000.index(gr[1])
                         if A_ordinal < 200:
                             num_of_top_200_adjs.append(gr[1])
+                            num_of_top_500_adjs.append(gr[1])
+                            num_of_top_1000_adjs.append(gr[1])
                         elif A_ordinal < 500:
                             num_of_top_500_adjs.append(gr[1])
+                            num_of_top_1000_adjs.append(gr[1])
                         elif A_ordinal < 1000:
                             num_of_top_1000_adjs.append(gr[1])
                 elif 'V' in gr:
@@ -241,8 +249,11 @@ for path in paths:
                             V_ordinal = verbs_top_1000.index(gr[1])
                             if V_ordinal < 200:
                                 num_of_top_200_verbs.append(gr[1])
+                                num_of_top_500_verbs.append(gr[1])
+                                num_of_top_1000_verbs.append(gr[1])
                             elif V_ordinal < 500:
                                 num_of_top_500_verbs.append(gr[1])
+                                num_of_top_1000_verbs.append(gr[1])
                             elif V_ordinal < 1000:
                                 num_of_top_1000_verbs.append(gr[1])
                     elif 'прич' in gr or 'деепр' in gr:
@@ -297,8 +308,7 @@ for path in paths:
         if complicated_inds:
             for i in range(len(conjs_weights)):
                 if i in complicated_inds.keys():
-                    new_conjs_weights.append(np.prod(conjs_weights[complicated_inds[i][0]: conjs_weights[i][1] + 1]))
-                    last_ind = complicated_inds[i][1]
+                    new_conjs_weights.append(np.prod(conjs_weights[complicated_inds[i][0]: complicated_inds[i][1] + 1]))
                 elif i <= last_ind:
                     pass
                 else:
@@ -349,13 +359,17 @@ for path in paths:
         inverse_all.append([])
 
         for sent in sents:
-            sent_in_str = ' '.join([elem[1] for elem in sent]).replace(',', ' <comma> ')
+            sent_in_str_comma_repl = ' '.join([elem[1] for elem in sent]).replace(',', ' <comma> ')
+            sent_in_str = ' '.join([elem[1] for elem in sent])
+            words = re.findall('\w+', sent_in_str)
+
             predic = False
             predic_ids = []
             root_ids = []
             simple_syntax = True
             soch = 0
             heads_ids = [elem[6] for elem in sent]
+
 
             for i, elem in enumerate(sent):
 
@@ -385,40 +399,40 @@ for path in paths:
                     simple_syntax = False
 
                 if elem[7] in ['сент-соч', 'соч-союзн']:
-                    if sent_complic_soch_all[-1][-1] != sent_in_str:
+                    if sent_complic_soch_all[-1][-1] != sent_in_str_comma_repl:
                         sent_complic_soch += 1
-                        sent_complic_soch_all[-1].append(sent_in_str)
+                        sent_complic_soch_all[-1].append(sent_in_str_comma_repl)
                 elif elem[7] == 'подч-союзн' or elem[7] == 'изъясн' or elem[7] == 'релят':
-                    if sent_complic_depend_all[-1][-1] != sent_in_str:
+                    if sent_complic_depend_all[-1][-1] != sent_in_str_comma_repl:
                         sent_complic_depend += 1
-                        sent_complic_depend_all[-1].append(sent_in_str)
+                        sent_complic_depend_all[-1].append(sent_in_str_comma_repl)
                 elif elem[7] == 'сочин':
                     soch += 1
 
                 elif elem[3] == 'PARTCP' and elem[7] in syntax_roles_partcp and elem[0] in heads_ids:
                     particip_clauses_qty += 1
-                    particip_clause_all[-1].append(sent_in_str)
+                    particip_clause_all[-1].append(sent_in_str_comma_repl)
 
             for i in range(len(predic_ids)):
                 if root_ids[i] < predic_ids[i]:
                     inverse += 1
-                    inverse_all[-1].append(sent_in_str)
+                    inverse_all[-1].append(sent_in_str_comma_repl)
                     break
 
             if predic and simple_syntax:
                 sent_simple_synt += 1
-                sent_simple_all[-1].append(sent_in_str)
+                sent_simple_all[-1].append(sent_in_str_comma_repl)
 
-            if not predic:
+            if not predic and len(words) > 0:
                 no_predic += 1
-                no_predic_all[-1].append(sent_in_str)
+                no_predic_all[-1].append(sent_in_str_comma_repl)
 
             if soch == 1:
                 sent_two_homogen += 1
-                sent_two_homogen_all[-1].append(sent_in_str)
+                sent_two_homogen_all[-1].append(sent_in_str_comma_repl)
             elif soch == 2:
                 sent_three_homogen += 1
-                sent_three_homogen_all[-1].append(sent_in_str)
+                sent_three_homogen_all[-1].append(sent_in_str_comma_repl)
 
         w_n_str = str(n_of_words)
         s_n_str = str(n_of_sents)
@@ -429,15 +443,17 @@ for path in paths:
             nouns = 1
         if verbs_gen == 0:
             verbs_gen = 1
+        if conjs == 0:
+            conjs = 1
 
         final_list_of_features = [avg_chars_len, total_chars_len, n_of_words, len(foreign_words)/n_of_words,
                                   len(latin_nums)/n_of_words, len(compound_nums)/n_of_words,
                                   len(qty_markers)/n_of_words, punct_score/len(punctuation), sum(new_conjs_weights)/conjs,
                                   len(named_entities)/nouns, len(parenth)/n_of_sents, len(rare_obsol)/n_of_words,
                                   avg_W_freq, avg_W_Rs, avg_W_Ds, avg_W_Docs, len(oov_words)/n_of_words,
-                                  len(abstr_nouns)/nouns, participles/n_of_sents, verbs_pers/verbs_gen, advs/verbs_gen,
+                                  len(abstr_nouns)/nouns, participles/verbs_gen, verbs_pers/verbs_gen, advs/verbs_gen,
                                   len(num_of_top_200_nouns)/nouns, len(num_of_top_500_nouns)/nouns,
-                                  len(num_of_top_1000_nouns)/nouns, len(num_of_top_200_adjs)/nouns,
+                                  len(num_of_top_1000_nouns)/nouns, len(num_of_top_200_adjs)/adjs,
                                   len(num_of_top_500_adjs)/adjs, len(num_of_top_1000_adjs)/adjs,
                                   len(num_of_top_200_verbs)/verbs_gen, len(num_of_top_500_verbs)/verbs_gen,
                                   len(num_of_top_1000_verbs)/verbs_gen, inverse/n_of_sents,
