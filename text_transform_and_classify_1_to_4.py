@@ -19,7 +19,7 @@ def classify_1_to_4(paths_list):
             metrics = IB_metrics_readability.calc_readability_metrics(text)
             avg = np.mean([metrics['FK'], metrics['CL'], metrics['DC'], metrics['SMOG'], metrics['ARI']])
 
-            if avg >= 5:
+            if avg >= 6:
                 results.append('no')
             else:
                 results.append('yes')
@@ -1001,7 +1001,7 @@ def classify_texts():
     for m in range(len(file_names)):
         if suitability[m] == 'no':
             classification_results.append(5)  # too hard
-        elif sentences_qty[m] <= 2:
+        elif sentences_qty[m] <= 3:
             classification_results.append(1)  # too easy
         else:
             text_vec = [num_of_1st_class[m] + num_of_2nd_class_W[m] + num_of_2nd_class_S[m] + num_of_3rd_class_W[m] +
