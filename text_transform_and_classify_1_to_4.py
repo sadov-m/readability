@@ -117,6 +117,8 @@ paths = extracting_texts_paths(path_for_pipeline)
 # sets with syntax roles for certain features
 syntax_roles_partcp = ['релят', 'опред', 'оп-опред']
 
+# latin finder
+regexp_latin_words_finder = re.compile(r"[A-Za-z]+-*[A-Za-z]*")
 
 # a func to transform a word to a mask of type CVC... where C is a consonant and V is a vowel
 def get_word_mask(word):
@@ -189,6 +191,27 @@ for ord_ind, path in enumerate(paths):
     # removing all the punctuation from tokens so as to count number of words in text
     tokenized_sents = [[token for token in sent if token.isalnum()] for sent in tokenizer.get_sentence_segmentation()]
 
+    # latin words + swear words
+    latin_words_qty = regexp_latin_words_finder.findall(text)
+    swear_flag = False
+
+    output_path = path.split('\\')[-1]
+    call_string = r'C:/Users/Mike/PycharmProjects/ru-syntax/bin/mystem.exe -cgnid {}' \
+                  r' tmp\{}'.format(path, output_path)
+
+    call(call_string)
+    mystem_result = open_wordlist('tmp/' + output_path)
+
+    for word_gr in mystem_result:
+
+        try:
+            gr = re.findall('\w+', word_gr.split('|')[0])
+            if 'обсц' in gr:
+                swear_flag = True
+                break
+        except:
+            pass
+
     # plain formal features: see variables names
     n_of_sents = len(tokenized_sents)
     n_of_words = sum([len(sent) for sent in tokenized_sents])
@@ -201,8 +224,16 @@ for ord_ind, path in enumerate(paths):
     total_words_nums.append(n_of_words)
     sentences_qty.append(n_of_sents)
 
-    if suitability[ord_ind] == 'no':
-        pass
+    if swear_flag:
+        suitability[ord_ind] = 'swear'
+    elif len(latin_words_qty) > 1:
+        suitability[ord_ind] = 'latin'
+    elif n_of_sents <= 3 or n_of_words <= 12 or total_chars_len <= 50 or avg_chars_len <= 2.5:
+        suitability[ord_ind] = 'short'
+    elif n_of_sents >= 50 or n_of_words >= 1200:
+        suitability[ord_ind] = 'long'
+    elif suitability[ord_ind] == 'no':
+        suitability[ord_ind] = 'hard'
     else:
         # print('num of sentences:', number_of_sents, 'num of words:', number_of_words, 'total chars:', total_chars_len)
 
@@ -532,13 +563,6 @@ for ord_ind, path in enumerate(paths):
         adjs = 0
 
         # lex and morph features retrieval
-        output_path = path.split('\\')[-1]
-        call_string = r'C:/Users/Mike/PycharmProjects/ru-syntax/bin/mystem.exe -cgnid {}' \
-                      r' tmp\{}'.format(path, output_path)
-
-        call(call_string)
-        mystem_result = open_wordlist('tmp/'+output_path)
-
         for word_gr in mystem_result:
 
             try:
@@ -991,23 +1015,25 @@ if save_output:
                        ' <delim> '.join(rare_obsol_all[j]) + ',' + ' <delim> '.join(foreign_all[j]) + ',' +
                        ' <delim> '.join(alt_conjs_num_all[j]) + ',' + ' <delim> '.join(particip_clause_all[j]))
 
-classify = True
-print(len(file_names))
+#classify = True
+#print(len(file_names))
+
 
 def classify_texts():
     model = joblib.load('trained_model')
     classification_results = []
+    proc_ind = 0  # counter for texts that were processed
 
-    for m in range(len(file_names)):
-        if suitability[m] == 'no':
-            classification_results.append(5)  # too hard
-        elif sentences_qty[m] <= 3:
-            classification_results.append(1)  # too easy
-        else:
-            text_vec = [num_of_1st_class[m] + num_of_2nd_class_W[m] + num_of_2nd_class_S[m] + num_of_3rd_class_W[m] +
-                        num_of_3rd_class_S[m] + num_of_4th_class_W[m][:][0:4] + num_of_4th_class_S[m] +
-                        [avg_chars_lens[m]]]
+    for t in range(len(file_names)):
+        if suitability[t] == 'yes':
+            text_vec = [num_of_1st_class[proc_ind] + num_of_2nd_class_W[proc_ind] + num_of_2nd_class_S[proc_ind] +
+                        num_of_3rd_class_W[proc_ind] + num_of_3rd_class_S[proc_ind] +
+                        num_of_4th_class_W[proc_ind][:][0:4] + num_of_4th_class_S[proc_ind] +
+                        [avg_chars_lens[proc_ind]]]
+            proc_ind += 1
             classification_results.append(model.predict(text_vec)[0])
+        else:
+            classification_results.append((suitability[t]))
 
     return classification_results
 
