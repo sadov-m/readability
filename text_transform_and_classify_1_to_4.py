@@ -8,9 +8,13 @@ import os
 import numpy as np
 from sklearn.externals import joblib
 import IB_metrics_readability
+import pandas as pd
 
+df_params = pd.read_csv("classifier_centering_params.csv", sep="|")
 
 def classify_1_to_4(paths_list):
+    DEBUG = False
+
     results = []
     for path in paths_list:
         with open(path, encoding='utf-8') as file_opener:
@@ -19,7 +23,10 @@ def classify_1_to_4(paths_list):
             metrics = IB_metrics_readability.calc_readability_metrics(text)
             avg = np.mean([metrics['FK'], metrics['CL'], metrics['DC'], metrics['SMOG'], metrics['ARI']])
 
-            if avg >= 6:
+            if DEBUG:
+                print(path, ":", avg)
+
+            if avg >= 10:
                 results.append('no')
             else:
                 results.append('yes')
@@ -227,14 +234,14 @@ for ord_ind, path in enumerate(paths):
 
     if swear_flag:
         suitability[ord_ind] = 'swear'
-    elif len(latin_words_qty) > 1:
+    """elif len(latin_words_qty) > 1:
         suitability[ord_ind] = 'latin'
     elif n_of_sents <= 3 or n_of_words <= 12 or total_chars_len <= 50 or avg_chars_len <= 2.5:
         suitability[ord_ind] = 'short'
     elif n_of_sents >= 50 or n_of_words >= 1200:
         suitability[ord_ind] = 'long'
     elif suitability[ord_ind] == 'no':
-        suitability[ord_ind] = 'hard'
+        suitability[ord_ind] = 'hard'"""
     
     if True:
         # print('num of sentences:', number_of_sents, 'num of words:', number_of_words, 'total chars:', total_chars_len)
@@ -947,7 +954,11 @@ fourth_level_W_names = [string + '_W' for string in fourth_level_W_names]
 fourth_level_S_names = [fourth_level_names[:][3]] + fourth_level_names[:][6:]
 fourth_level_S_names = [string + '_S' for string in fourth_level_S_names]
 
-save_output = True
+transformer_names = first_level_names + second_level_W_names + second_level_S_names +\
+                    third_level_W_names + third_level_S_names + fourth_level_W_names[:4] +\
+                    fourth_level_S_names + ['avg_len_in_chars']
+
+save_output = False
 if save_output:
     with open(path_for_pipeline+r'/result.csv', 'w', encoding='utf-8') as writer:
         writer.write('filename' + ',' + ','.join(first_level_names) + ',' +
@@ -1028,7 +1039,7 @@ if save_output:
 
 
 def classify_texts():
-    model = joblib.load('trained_model')
+    model = joblib.load('trained_model_sept_2023')
     classification_results = []
     proc_ind = 0  # counter for texts that were processed
 
@@ -1038,8 +1049,11 @@ def classify_texts():
                         num_of_3rd_class_W[proc_ind] + num_of_3rd_class_S[proc_ind] +
                         num_of_4th_class_W[proc_ind][:][0:4] + num_of_4th_class_S[proc_ind] +
                         [avg_chars_lens[proc_ind]]]
+            text_vec_mod = [(text_vec[i] - df_params.iloc[i]["mean"]) / df_params.iloc[i]["delimiter"]
+                            for i in range(len(text_vec))]
             proc_ind += 1
-            classification_results.append(model.predict(text_vec)[0])
+            prediction = model.predict(text_vec_mod)
+            classification_results.append(prediction[0])
         else:
             classification_results.append((suitability[t]))
 
