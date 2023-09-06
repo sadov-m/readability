@@ -179,6 +179,7 @@ adjs_top_1000 = [string.split(';')[0] for string in adjs_top_1000]
 
 # main loop
 for ord_ind, path in enumerate(paths):
+    print(ord_ind, path)
     with open(path, encoding='utf-8') as file_opener:
         text = file_opener.read().strip()
         file_names.append(path)
@@ -234,7 +235,8 @@ for ord_ind, path in enumerate(paths):
         suitability[ord_ind] = 'long'
     elif suitability[ord_ind] == 'no':
         suitability[ord_ind] = 'hard'
-    else:
+    
+    if True:
         # print('num of sentences:', number_of_sents, 'num of words:', number_of_words, 'total chars:', total_chars_len)
 
         # accent_lstm
@@ -945,7 +947,7 @@ fourth_level_W_names = [string + '_W' for string in fourth_level_W_names]
 fourth_level_S_names = [fourth_level_names[:][3]] + fourth_level_names[:][6:]
 fourth_level_S_names = [string + '_S' for string in fourth_level_S_names]
 
-save_output = False
+save_output = True
 if save_output:
     with open(path_for_pipeline+r'/result.csv', 'w', encoding='utf-8') as writer:
         writer.write('filename' + ',' + ','.join(first_level_names) + ',' +
@@ -957,6 +959,11 @@ if save_output:
         length = len(file_names) - 1
         for m in range(len(file_names)):
 
+            #print(m, file_names, total_chars_lens, total_words_nums, avg_chars_lens)
+            #print(num_of_1st_class)
+            #print(num_of_2nd_class_W, num_of_2nd_class_S)
+            #print(num_of_3rd_class_W, num_of_3rd_class_S)
+            #print(num_of_4th_class_W, num_of_4th_class_S)
             string_to_write = file_names[m] + ',' + ','.join(list(map(str, num_of_1st_class[m]))) + ',' +\
                              ','.join(list(map(str, num_of_2nd_class_W[m]))) + ',' +\
                              ','.join(list(map(str, num_of_2nd_class_S[m]))) + ',' +\
@@ -1014,6 +1021,7 @@ if save_output:
                        ' <delim> '.join(three_syl_cc_on_the_edge_all[j]) + ',' + ' <delim> '.join(five_syl_cc_on_the_edge_all[j]) + ',' +
                        ' <delim> '.join(rare_obsol_all[j]) + ',' + ' <delim> '.join(foreign_all[j]) + ',' +
                        ' <delim> '.join(alt_conjs_num_all[j]) + ',' + ' <delim> '.join(particip_clause_all[j]))
+        print(path_for_pipeline+r'/detailed_report/{}.csv'.format(report_filename))
 
 #classify = True
 #print(len(file_names))
